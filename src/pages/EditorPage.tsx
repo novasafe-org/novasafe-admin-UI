@@ -6,6 +6,7 @@ import { Save, Eye, ArrowLeft, Bold, Italic, Heading1, Heading2, List, ListOrder
 import { toast } from "sonner";
 
 export default function EditorPage() {
+  const contentRef = useRef<HTMLTextAreaElement>(null);
   const { posts, addPost, updatePost } = useApp();
   const { id } = useParams();
   const navigate = useNavigate();
