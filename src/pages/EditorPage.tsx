@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useApp } from "@/context/AppContext";
 import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -6,6 +6,7 @@ import { Save, Eye, ArrowLeft, Bold, Italic, Heading1, Heading2, List, ListOrder
 import { toast } from "sonner";
 
 export default function EditorPage() {
+  const contentRef = useRef<HTMLTextAreaElement>(null);
   const { posts, addPost, updatePost } = useApp();
   const { id } = useParams();
   const navigate = useNavigate();
@@ -88,8 +89,21 @@ export default function EditorPage() {
     return () => window.removeEventListener("keydown", handler);
   }, [handleSave]);
 
-  const insertMarkdown = (syntax: string) => {
-    setContent((prev) => prev + syntax);
+  const insertMarkdown = (prefix: string, suffix = "") => {
+    const textarea = contentRef.current;
+    if (!textarea) return;
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selected = content.slice(start, end);
+    const replacement = prefix + (selected || "text") + suffix;
+    const newContent = content.slice(0, start) + replacement + content.slice(end);
+    setContent(newContent);
+    // Restore cursor position after React re-render
+    requestAnimationFrame(() => {
+      textarea.focus();
+      const cursorPos = start + prefix.length + (selected || "text").length;
+      textarea.setSelectionRange(cursorPos, cursorPos);
+    });
   };
 
   return (
@@ -142,15 +156,15 @@ export default function EditorPage() {
         {/* Formatting toolbar */}
         <div className="flex items-center gap-0.5 px-4 md:px-6 pb-2 overflow-x-auto">
           {[
-            { icon: Bold, action: () => insertMarkdown("**bold**"), label: "Bold" },
-            { icon: Italic, action: () => insertMarkdown("*italic*"), label: "Italic" },
+            { icon: Bold, action: () => insertMarkdown("**", "**"), label: "Bold" },
+            { icon: Italic, action: () => insertMarkdown("*", "*"), label: "Italic" },
             { icon: Heading1, action: () => insertMarkdown("\n# "), label: "H1" },
             { icon: Heading2, action: () => insertMarkdown("\n## "), label: "H2" },
             { icon: List, action: () => insertMarkdown("\n- "), label: "Bullet" },
             { icon: ListOrdered, action: () => insertMarkdown("\n1. "), label: "Number" },
             { icon: Quote, action: () => insertMarkdown("\n> "), label: "Quote" },
-            { icon: Code, action: () => insertMarkdown("\n```\n\n```"), label: "Code" },
-            { icon: ImageIcon, action: () => insertMarkdown("\n![alt](url)"), label: "Image" },
+            { icon: Code, action: () => insertMarkdown("`", "`"), label: "Code" },
+            { icon: ImageIcon, action: () => insertMarkdown("![alt](", ")"), label: "Image" },
           ].map((tool) => (
             <button
               key={tool.label}
@@ -178,6 +192,7 @@ export default function EditorPage() {
             />
             <p className="text-xs text-muted-foreground">/{slug || "your-slug-here"}</p>
             <textarea
+              ref={contentRef}
               value={content}
               onChange={(e) => setContent(e.target.value)}
               placeholder="Start writing your content..."
