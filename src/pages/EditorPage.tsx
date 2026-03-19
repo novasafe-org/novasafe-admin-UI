@@ -89,8 +89,21 @@ export default function EditorPage() {
     return () => window.removeEventListener("keydown", handler);
   }, [handleSave]);
 
-  const insertMarkdown = (syntax: string) => {
-    setContent((prev) => prev + syntax);
+  const insertMarkdown = (prefix: string, suffix = "") => {
+    const textarea = contentRef.current;
+    if (!textarea) return;
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selected = content.slice(start, end);
+    const replacement = prefix + (selected || "text") + suffix;
+    const newContent = content.slice(0, start) + replacement + content.slice(end);
+    setContent(newContent);
+    // Restore cursor position after React re-render
+    requestAnimationFrame(() => {
+      textarea.focus();
+      const cursorPos = start + prefix.length + (selected || "text").length;
+      textarea.setSelectionRange(cursorPos, cursorPos);
+    });
   };
 
   return (
