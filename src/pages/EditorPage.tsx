@@ -192,6 +192,7 @@ export default function EditorPage() {
             />
             <p className="text-xs text-muted-foreground">/{slug || "your-slug-here"}</p>
             <textarea
+              ref={contentRef}
               value={content}
               onChange={(e) => setContent(e.target.value)}
               placeholder="Start writing your content..."
