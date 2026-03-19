@@ -156,15 +156,15 @@ export default function EditorPage() {
         {/* Formatting toolbar */}
         <div className="flex items-center gap-0.5 px-4 md:px-6 pb-2 overflow-x-auto">
           {[
-            { icon: Bold, action: () => insertMarkdown("**bold**"), label: "Bold" },
-            { icon: Italic, action: () => insertMarkdown("*italic*"), label: "Italic" },
+            { icon: Bold, action: () => insertMarkdown("**", "**"), label: "Bold" },
+            { icon: Italic, action: () => insertMarkdown("*", "*"), label: "Italic" },
             { icon: Heading1, action: () => insertMarkdown("\n# "), label: "H1" },
             { icon: Heading2, action: () => insertMarkdown("\n## "), label: "H2" },
             { icon: List, action: () => insertMarkdown("\n- "), label: "Bullet" },
             { icon: ListOrdered, action: () => insertMarkdown("\n1. "), label: "Number" },
             { icon: Quote, action: () => insertMarkdown("\n> "), label: "Quote" },
-            { icon: Code, action: () => insertMarkdown("\n```\n\n```"), label: "Code" },
-            { icon: ImageIcon, action: () => insertMarkdown("\n![alt](url)"), label: "Image" },
+            { icon: Code, action: () => insertMarkdown("`", "`"), label: "Code" },
+            { icon: ImageIcon, action: () => insertMarkdown("![alt](", ")"), label: "Image" },
           ].map((tool) => (
             <button
               key={tool.label}
