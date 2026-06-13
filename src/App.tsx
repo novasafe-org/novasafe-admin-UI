@@ -2,64 +2,59 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
 import { Toaster as Sonner } from "@/components/ui/sonner";
-import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { AppProvider } from "@/context/AppContext";
-import { BlogLayout } from "@/components/blog/BlogLayout";
-import { DashboardLayout } from "@/components/DashboardLayout";
-import Dashboard from "@/pages/Dashboard";
-import PostsPage from "@/pages/PostsPage";
-import EditorPage from "@/pages/EditorPage";
-import SEOPage from "@/pages/SEOPage";
-import AIAssistantPage from "@/pages/AIAssistantPage";
-import AnalyticsPage from "@/pages/AnalyticsPage";
-import MediaPage from "@/pages/MediaPage";
-import TeamPage from "@/pages/TeamPage";
-import SettingsPage from "@/pages/SettingsPage";
+import { NovaProvider } from "@/context/NovaContext";
+import { NovaLayout } from "@/components/nova/NovaLayout";
+import DashboardPage from "@/pages/nova/DashboardPage";
+import UsersPage from "@/pages/nova/UsersPage";
+import UserDetailPage from "@/pages/nova/UserDetailPage";
+import SubscriptionsPage from "@/pages/nova/SubscriptionsPage";
+import SecurityPage from "@/pages/nova/SecurityPage";
+import DevicesPage from "@/pages/nova/DevicesPage";
+import ContentPage from "@/pages/nova/ContentPage";
+import DocsPage from "@/pages/nova/DocsPage";
+import ChangelogPage from "@/pages/nova/ChangelogPage";
+import AnnouncementsPage from "@/pages/nova/AnnouncementsPage";
+import SupportPage from "@/pages/nova/SupportPage";
+import AnalyticsPage from "@/pages/nova/AnalyticsPage";
+import SystemPage from "@/pages/nova/SystemPage";
+import AuditPage from "@/pages/nova/AuditPage";
+import RBACPage from "@/pages/nova/RBACPage";
+import SettingsPage from "@/pages/nova/SettingsPage";
 import NotFound from "@/pages/NotFound";
-import BlogIndexPage from "@/pages/blog/BlogIndexPage";
-import BlogPostPage from "@/pages/blog/BlogPostPage";
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 30_000,
-      retry: 1,
-    },
-  },
-});
+const queryClient = new QueryClient();
 
 const App = () => (
   <HelmetProvider>
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <AppProvider>
-          <Toaster />
+        <NovaProvider>
           <Sonner />
           <BrowserRouter>
             <Routes>
-              <Route element={<BlogLayout />}>
-                <Route path="/blog" element={<BlogIndexPage />} />
-                <Route path="/blog/:slug" element={<BlogPostPage />} />
-              </Route>
-
-              <Route element={<DashboardLayout />}>
-                <Route path="/" element={<Dashboard />} />
-                <Route path="/posts" element={<PostsPage />} />
-                <Route path="/editor" element={<EditorPage />} />
-                <Route path="/editor/:id" element={<EditorPage />} />
-                <Route path="/seo" element={<SEOPage />} />
-                <Route path="/ai" element={<AIAssistantPage />} />
+              <Route element={<NovaLayout />}>
+                <Route path="/" element={<DashboardPage />} />
                 <Route path="/analytics" element={<AnalyticsPage />} />
-                <Route path="/media" element={<MediaPage />} />
-                <Route path="/team" element={<TeamPage />} />
+                <Route path="/users" element={<UsersPage />} />
+                <Route path="/users/:id" element={<UserDetailPage />} />
+                <Route path="/subscriptions" element={<SubscriptionsPage />} />
+                <Route path="/devices" element={<DevicesPage />} />
+                <Route path="/support" element={<SupportPage />} />
+                <Route path="/security" element={<SecurityPage />} />
+                <Route path="/audit" element={<AuditPage />} />
+                <Route path="/rbac" element={<RBACPage />} />
+                <Route path="/content" element={<ContentPage />} />
+                <Route path="/docs" element={<DocsPage />} />
+                <Route path="/changelog" element={<ChangelogPage />} />
+                <Route path="/announcements" element={<AnnouncementsPage />} />
+                <Route path="/system" element={<SystemPage />} />
                 <Route path="/settings" element={<SettingsPage />} />
               </Route>
-
               <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
-        </AppProvider>
+        </NovaProvider>
       </TooltipProvider>
     </QueryClientProvider>
   </HelmetProvider>
