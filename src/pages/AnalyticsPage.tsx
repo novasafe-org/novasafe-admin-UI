@@ -1,4 +1,4 @@
-import { useApp } from "@/context/AppContext";
+import { usePostsQuery } from "@/hooks/use-posts";
 import { motion } from "framer-motion";
 import { BarChart3, Eye, FileText, Clock, TrendingUp } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar } from "recharts";
@@ -22,7 +22,8 @@ const categoryData = [
 ];
 
 export default function AnalyticsPage() {
-  const { posts } = useApp();
+  const { data } = usePostsQuery();
+  const posts = data?.posts ?? [];
   const totalViews = posts.reduce((s, p) => s + p.views, 0);
   const avgReadTime = posts.length ? (posts.reduce((s, p) => s + p.readTime, 0) / posts.length).toFixed(1) : "0";
   const published = posts.filter((p) => p.status === "published").length;

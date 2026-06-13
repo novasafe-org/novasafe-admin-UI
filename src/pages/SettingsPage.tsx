@@ -1,4 +1,7 @@
 import { useApp } from "@/context/AppContext";
+import { getApiBaseUrl, getApiToken, setApiBaseUrl, setApiToken } from "@/lib/api/config";
+import { apiClient } from "@/lib/api/client";
+import type { ApiSuccess } from "@/lib/api/types";
 import { motion } from "framer-motion";
 import { Settings, Globe, Moon, Sun, Key } from "lucide-react";
 import { useState } from "react";
@@ -9,8 +12,31 @@ export default function SettingsPage() {
   const [siteName, setSiteName] = useState("Lexicon Blog");
   const [defaultMetaTitle, setDefaultMetaTitle] = useState("Lexicon | Content Platform");
   const [defaultMetaDesc, setDefaultMetaDesc] = useState("A modern content operating system for creators and teams.");
+  const [apiBaseUrl, setApiBaseUrlState] = useState(getApiBaseUrl);
+  const [apiToken, setApiTokenState] = useState(getApiToken() ?? "");
+  const [apiEmail, setApiEmail] = useState("");
+  const [apiPassword, setApiPassword] = useState("");
 
-  const save = () => toast.success("Settings saved");
+  const save = () => {
+    setApiBaseUrl(apiBaseUrl);
+    setApiToken(apiToken);
+    toast.success("Settings saved");
+  };
+
+  const login = async () => {
+    try {
+      const { data } = await apiClient.post<ApiSuccess<{ accessToken: string }>>("/auth/login", {
+        email: apiEmail,
+        password: apiPassword,
+      });
+      const token = data.data.accessToken;
+      setApiToken(token);
+      setApiTokenState(token);
+      toast.success("Signed in — API token saved");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Login failed");
+    }
+  };
 
   return (
     <div className="p-6 md:p-8 max-w-[800px] mx-auto space-y-6">
@@ -21,7 +47,6 @@ export default function SettingsPage() {
         <h1 className="text-2xl font-semibold text-foreground">Settings</h1>
       </div>
 
-      {/* General */}
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="bg-card rounded-xl shadow-card p-5 space-y-4">
         <h2 className="font-semibold text-card-foreground flex items-center gap-2"><Globe className="w-4 h-4 text-primary" /> General</h2>
         <div>
@@ -38,7 +63,6 @@ export default function SettingsPage() {
         </div>
       </motion.div>
 
-      {/* Appearance */}
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="bg-card rounded-xl shadow-card p-5">
         <h2 className="font-semibold text-card-foreground mb-3">Appearance</h2>
         <div className="flex items-center justify-between">
@@ -54,16 +78,46 @@ export default function SettingsPage() {
         </div>
       </motion.div>
 
-      {/* API */}
-      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="bg-card rounded-xl shadow-card p-5">
-        <h2 className="font-semibold text-card-foreground mb-3 flex items-center gap-2"><Key className="w-4 h-4 text-primary" /> Integrations</h2>
-        <div className="space-y-3">
-          {["OpenAI API", "Google Analytics", "Cloudinary"].map((api) => (
-            <div key={api} className="flex items-center justify-between py-2 border-b border-border last:border-0">
-              <span className="text-sm text-card-foreground">{api}</span>
-              <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded">Not connected</span>
-            </div>
-          ))}
+      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="bg-card rounded-xl shadow-card p-5 space-y-4">
+        <h2 className="font-semibold text-card-foreground flex items-center gap-2"><Key className="w-4 h-4 text-primary" /> Blog API</h2>
+        <div>
+          <label className="text-xs font-medium text-muted-foreground block mb-1.5">API Base URL</label>
+          <input
+            value={apiBaseUrl}
+            onChange={(e) => setApiBaseUrlState(e.target.value)}
+            placeholder="http://localhost:8787/api/v1"
+            className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring/20 text-foreground font-mono"
+          />
+        </div>
+        <div>
+          <label className="text-xs font-medium text-muted-foreground block mb-1.5">JWT Token (or sign in below)</label>
+          <input
+            value={apiToken}
+            onChange={(e) => setApiTokenState(e.target.value)}
+            placeholder="Bearer token for admin API"
+            type="password"
+            className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring/20 text-foreground font-mono"
+          />
+        </div>
+        <div className="pt-2 border-t border-border space-y-3">
+          <p className="text-xs text-muted-foreground">Sign in to fetch a token automatically</p>
+          <input
+            value={apiEmail}
+            onChange={(e) => setApiEmail(e.target.value)}
+            placeholder="Admin email"
+            type="email"
+            className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring/20 text-foreground"
+          />
+          <input
+            value={apiPassword}
+            onChange={(e) => setApiPassword(e.target.value)}
+            placeholder="Password"
+            type="password"
+            className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring/20 text-foreground"
+          />
+          <button onClick={login} className="px-4 py-2 rounded-md bg-secondary text-secondary-foreground text-sm font-medium hover:bg-accent transition-colors">
+            Sign in
+          </button>
         </div>
       </motion.div>
 

@@ -11,6 +11,28 @@ export default defineConfig(({ mode }) => ({
     hmr: {
       overlay: false,
     },
+    proxy: {
+      "/api": {
+        target: "http://localhost:8787",
+        changeOrigin: true,
+      },
+      "/sitemap.xml": {
+        target: "http://localhost:8787",
+        changeOrigin: true,
+      },
+      "/robots.txt": {
+        target: "http://localhost:8787",
+        changeOrigin: true,
+      },
+      "/feed.xml": {
+        target: "http://localhost:8787",
+        changeOrigin: true,
+      },
+      "/rss.xml": {
+        target: "http://localhost:8787",
+        changeOrigin: true,
+      },
+    },
   },
   plugins: [react(), mode === "development" && componentTagger()].filter(Boolean),
   resolve: {

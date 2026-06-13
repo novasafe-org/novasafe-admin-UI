@@ -1,4 +1,5 @@
-import { useApp, BlogPost } from "@/context/AppContext";
+import { usePostsQuery } from "@/hooks/use-posts";
+import { BlogPost } from "@/context/AppContext";
 import { StatCard } from "@/components/StatCard";
 import { MiniChart } from "@/components/MiniChart";
 import { FileText, Eye, TrendingUp, Clock, ArrowUpRight } from "lucide-react";
@@ -6,7 +7,8 @@ import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 
 export default function Dashboard() {
-  const { posts } = useApp();
+  const { data } = usePostsQuery();
+  const posts = data?.posts ?? [];
   const published = posts.filter((p) => p.status === "published");
   const totalViews = posts.reduce((s, p) => s + p.views, 0);
   const avgReadTime = posts.length

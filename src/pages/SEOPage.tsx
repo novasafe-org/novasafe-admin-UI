@@ -1,11 +1,16 @@
-import { useApp } from "@/context/AppContext";
+import { usePostsQuery } from "@/hooks/use-posts";
 import { motion } from "framer-motion";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Search, ChevronRight } from "lucide-react";
 
 export default function SEOPage() {
-  const { posts } = useApp();
-  const [selectedId, setSelectedId] = useState<string | null>(posts[0]?.id || null);
+  const { data } = usePostsQuery();
+  const posts = data?.posts ?? [];
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!selectedId && posts[0]) setSelectedId(posts[0].id);
+  }, [posts, selectedId]);
   const selected = posts.find((p) => p.id === selectedId);
 
   const getSeoScore = (post: typeof selected) => {
