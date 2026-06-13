@@ -85,7 +85,7 @@ export default function SettingsPage() {
           <input
             value={apiBaseUrl}
             onChange={(e) => setApiBaseUrlState(e.target.value)}
-            placeholder="http://localhost:8787/api/v1"
+            placeholder="https://novasafe-blog-writing-api.vercel.app/api/v1"
             className="w-full px-3 py-2 rounded-lg border border-input bg-background text-sm focus:outline-none focus:ring-2 focus:ring-ring/20 text-foreground font-mono"
           />
         </div>
