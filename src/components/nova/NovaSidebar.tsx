@@ -1,11 +1,12 @@
 import { NavLink, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, Users, CreditCard, ShieldCheck, MonitorSmartphone, FileText,
-  BookOpen, Megaphone, Bell, LifeBuoy, BarChart3, Activity, ScrollText,
+  BookOpen, Megaphone, LifeBuoy, BarChart3, Activity, ScrollText,
   Lock, Settings, ChevronLeft, ChevronRight, Sparkles,
 } from "lucide-react";
-import { useState } from "react";
 import { useNova, Permission } from "@/context/NovaContext";
+import { useLayout } from "@/context/LayoutContext";
+import { getSecondaryNav } from "./secondaryNav";
 import { cn } from "@/lib/utils";
 
 type Item = { to: string; label: string; icon: any; perm?: Permission };
@@ -55,9 +56,17 @@ const groups: Group[] = [
 ];
 
 export function NovaSidebar() {
-  const [collapsed, setCollapsed] = useState(false);
+  const { primaryCollapsed, setPrimaryCollapsed, togglePrimary } = useLayout();
   const { can } = useNova();
   const { pathname } = useLocation();
+  const collapsed = primaryCollapsed;
+
+  const handleNavClick = (to: string) => {
+    // Auto-collapse primary when navigating to a route that has a secondary sidebar
+    if (to !== pathname && getSecondaryNav(to)) {
+      setPrimaryCollapsed(true);
+    }
+  };
 
   return (
     <aside
@@ -66,19 +75,23 @@ export function NovaSidebar() {
         collapsed ? "w-[64px]" : "w-[244px]",
       )}
     >
-      <div className="h-14 flex items-center px-4 border-b border-sidebar-border">
+      <button
+        onClick={togglePrimary}
+        className="h-14 flex items-center px-4 border-b border-sidebar-border hover:bg-sidebar-accent/50 transition-colors"
+        title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+      >
         <div className="flex items-center gap-2.5 overflow-hidden">
           <div className="w-7 h-7 rounded-md gradient-primary flex items-center justify-center shrink-0">
             <ShieldCheck className="w-4 h-4 text-primary-foreground" />
           </div>
           {!collapsed && (
-            <div className="leading-tight">
+            <div className="leading-tight text-left">
               <div className="font-semibold text-foreground text-[14px]">NovaSafe</div>
               <div className="text-[10px] text-muted-foreground uppercase tracking-wider">Admin</div>
             </div>
           )}
         </div>
-      </div>
+      </button>
 
       <nav className="flex-1 py-3 px-2 space-y-4 overflow-y-auto">
         {groups.map((g) => {
@@ -99,8 +112,10 @@ export function NovaSidebar() {
                       key={item.to}
                       to={item.to}
                       end={item.to === "/"}
+                      onClick={() => handleNavClick(item.to)}
                       className={cn(
                         "flex items-center gap-2.5 px-2.5 py-1.5 rounded-md text-[13px] text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors",
+                        collapsed && "justify-center px-0",
                         active && "bg-sidebar-accent text-sidebar-accent-foreground font-medium",
                       )}
                       title={collapsed ? item.label : undefined}
@@ -117,8 +132,11 @@ export function NovaSidebar() {
       </nav>
 
       <button
-        onClick={() => setCollapsed(!collapsed)}
-        className="flex items-center gap-2.5 m-2 px-2.5 py-1.5 rounded-md text-[13px] text-muted-foreground hover:bg-sidebar-accent border-t border-sidebar-border pt-3"
+        onClick={togglePrimary}
+        className={cn(
+          "flex items-center gap-2.5 m-2 px-2.5 py-1.5 rounded-md text-[13px] text-muted-foreground hover:bg-sidebar-accent border-t border-sidebar-border pt-3",
+          collapsed && "justify-center",
+        )}
       >
         {collapsed ? <ChevronRight className="w-4 h-4" /> : <><ChevronLeft className="w-4 h-4" /><span>Collapse</span></>}
       </button>
