@@ -1,9 +1,37 @@
-import { Badge, Card, Input, PageHeader, Select, StatTile, Toolbar } from "@/components/nova/ui";
+import { Badge, PageHeader, StatTile } from "@/components/nova/ui";
+import { DataTable, Column } from "@/components/nova/DataTable";
 import { tickets } from "@/lib/mockData";
 import { LifeBuoy, Clock, CheckCircle2, AlertCircle } from "lucide-react";
 
+type Ticket = (typeof tickets)[number];
+
 const priorityTone = (p: string) => p === "urgent" ? "danger" : p === "high" ? "warning" : p === "normal" ? "info" : "muted";
 const statusTone = (s: string) => s === "open" ? "warning" : s === "in_progress" ? "primary" : s === "resolved" ? "success" : "muted";
+
+const columns: Column<Ticket>[] = [
+  { key: "id", header: "Ticket", accessor: (t) => t.id, sortable: true, render: (t) => <span className="font-mono text-xs">{t.id}</span> },
+  { key: "subject", header: "Subject", accessor: (t) => t.subject, sortable: true },
+  { key: "user", header: "User", accessor: (t) => t.user, sortable: true, filterable: true },
+  {
+    key: "type", header: "Type", accessor: (t) => t.type, sortable: true, filterable: true,
+    filterOptions: [{ label: "Bug", value: "Bug" }, { label: "Question", value: "Question" }, { label: "Feature Request", value: "Feature Request" }, { label: "Billing", value: "Billing" }],
+    render: (t) => <Badge tone="info">{t.type}</Badge>,
+  },
+  {
+    key: "priority", header: "Priority", accessor: (t) => t.priority, sortable: true, filterable: true,
+    filterOptions: [{ label: "Urgent", value: "urgent" }, { label: "High", value: "high" }, { label: "Normal", value: "normal" }, { label: "Low", value: "low" }],
+    render: (t) => <Badge tone={priorityTone(t.priority) as any}>{t.priority}</Badge>,
+  },
+  {
+    key: "status", header: "Status", accessor: (t) => t.status, sortable: true, filterable: true,
+    filterOptions: [{ label: "Open", value: "open" }, { label: "In progress", value: "in_progress" }, { label: "Resolved", value: "resolved" }, { label: "Closed", value: "closed" }],
+    render: (t) => <Badge tone={statusTone(t.status) as any}>{t.status.replace("_", " ")}</Badge>,
+  },
+  {
+    key: "createdAt", header: "Created", accessor: (t) => new Date(t.createdAt).getTime(), sortable: true,
+    render: (t) => <span className="text-xs text-muted-foreground">{new Date(t.createdAt).toLocaleDateString()}</span>,
+  },
+];
 
 export default function SupportPage() {
   const open = tickets.filter((t) => t.status === "open").length;
@@ -21,38 +49,7 @@ export default function SupportPage() {
         <StatTile label="Avg first response" value="2h 14m" icon={<LifeBuoy className="w-4 h-4" />} />
       </div>
 
-      <Toolbar>
-        <Input placeholder="Search tickets…" className="w-72" />
-        <Select><option>All types</option><option>Bug</option><option>Question</option><option>Feature Request</option><option>Billing</option></Select>
-        <Select><option>Any status</option><option>Open</option><option>In progress</option><option>Resolved</option><option>Closed</option></Select>
-        <Select><option>Any priority</option><option>Urgent</option><option>High</option><option>Normal</option><option>Low</option></Select>
-      </Toolbar>
-
-      <Card className="overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead><tr className="text-[11px] uppercase tracking-wider text-muted-foreground bg-muted/50">
-              <th className="text-left px-4 py-2.5">Ticket</th><th className="text-left px-4 py-2.5">Subject</th>
-              <th className="text-left px-4 py-2.5">User</th><th className="text-left px-4 py-2.5">Type</th>
-              <th className="text-left px-4 py-2.5">Priority</th><th className="text-left px-4 py-2.5">Status</th>
-              <th className="text-left px-4 py-2.5">Created</th>
-            </tr></thead>
-            <tbody>
-              {tickets.map((t) => (
-                <tr key={t.id} className="border-t border-border hover:bg-accent/40">
-                  <td className="px-4 py-2.5 font-mono text-xs text-foreground">{t.id}</td>
-                  <td className="px-4 py-2.5 text-foreground">{t.subject}</td>
-                  <td className="px-4 py-2.5 text-muted-foreground">{t.user}</td>
-                  <td className="px-4 py-2.5"><Badge tone="info">{t.type}</Badge></td>
-                  <td className="px-4 py-2.5"><Badge tone={priorityTone(t.priority) as any}>{t.priority}</Badge></td>
-                  <td className="px-4 py-2.5"><Badge tone={statusTone(t.status) as any}>{t.status.replace("_", " ")}</Badge></td>
-                  <td className="px-4 py-2.5 text-xs text-muted-foreground">{new Date(t.createdAt).toLocaleDateString()}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </Card>
+      <DataTable columns={columns} rows={tickets} rowKey={(t) => t.id} searchPlaceholder="Search tickets…" />
     </div>
   );
 }

@@ -1,6 +1,26 @@
-import { Badge, Button, Card, Input, PageHeader, Select, Toolbar } from "@/components/nova/ui";
+import { Badge, Button, Card, PageHeader } from "@/components/nova/ui";
+import { DataTable, Column } from "@/components/nova/DataTable";
 import { blogPosts } from "@/lib/mockData";
 import { Plus, Image, Tag, Folder, Users } from "lucide-react";
+
+type Post = (typeof blogPosts)[number];
+
+const columns: Column<Post>[] = [
+  { key: "title", header: "Title", accessor: (p) => p.title, sortable: true, render: (p) => <span className="text-foreground font-medium">{p.title}</span> },
+  { key: "author", header: "Author", accessor: (p) => p.author, sortable: true, filterable: true },
+  {
+    key: "category", header: "Category", accessor: (p) => p.category, sortable: true, filterable: true,
+    filterOptions: Array.from(new Set(blogPosts.map((p) => p.category))).map((c) => ({ label: c, value: c })),
+    render: (p) => <Badge tone="info">{p.category}</Badge>,
+  },
+  {
+    key: "status", header: "Status", accessor: (p) => p.status, sortable: true, filterable: true,
+    filterOptions: [{ label: "Published", value: "published" }, { label: "Draft", value: "draft" }, { label: "Scheduled", value: "scheduled" }],
+    render: (p) => <Badge tone={p.status === "published" ? "success" : p.status === "draft" ? "muted" : "warning"}>{p.status}</Badge>,
+  },
+  { key: "views", header: "Views", accessor: (p) => p.views, sortable: true, align: "right", render: (p) => p.views.toLocaleString() },
+  { key: "updated", header: "Updated", accessor: (p) => p.updated, sortable: true, render: (p) => <span className="text-muted-foreground text-xs">{p.updated}</span> },
+];
 
 export default function ContentPage() {
   return (
@@ -19,35 +39,7 @@ export default function ContentPage() {
         <Card className="p-4 flex items-center gap-3"><Image className="w-5 h-5 text-primary" /><div><div className="text-xs text-muted-foreground uppercase tracking-wider">Media files</div><div className="text-xl font-semibold">318</div></div></Card>
       </div>
 
-      <Toolbar>
-        <Input placeholder="Search posts…" className="w-72" />
-        <Select><option>All categories</option><option>Security</option><option>Guides</option><option>Product</option><option>Research</option></Select>
-        <Select><option>Any status</option><option>Published</option><option>Draft</option><option>Scheduled</option></Select>
-      </Toolbar>
-
-      <Card className="overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead><tr className="text-[11px] uppercase tracking-wider text-muted-foreground bg-muted/50">
-              <th className="text-left px-4 py-2.5">Title</th><th className="text-left px-4 py-2.5">Author</th>
-              <th className="text-left px-4 py-2.5">Category</th><th className="text-left px-4 py-2.5">Status</th>
-              <th className="text-right px-4 py-2.5">Views</th><th className="text-left px-4 py-2.5">Updated</th>
-            </tr></thead>
-            <tbody>
-              {blogPosts.map((p) => (
-                <tr key={p.id} className="border-t border-border hover:bg-accent/40">
-                  <td className="px-4 py-2.5 text-foreground font-medium">{p.title}</td>
-                  <td className="px-4 py-2.5 text-muted-foreground">{p.author}</td>
-                  <td className="px-4 py-2.5"><Badge tone="info">{p.category}</Badge></td>
-                  <td className="px-4 py-2.5"><Badge tone={p.status === "published" ? "success" : p.status === "draft" ? "muted" : "warning"}>{p.status}</Badge></td>
-                  <td className="px-4 py-2.5 text-right tabular-nums">{p.views.toLocaleString()}</td>
-                  <td className="px-4 py-2.5 text-muted-foreground text-xs">{p.updated}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </Card>
+      <DataTable columns={columns} rows={blogPosts} rowKey={(p) => p.id} searchPlaceholder="Search posts…" />
     </div>
   );
 }

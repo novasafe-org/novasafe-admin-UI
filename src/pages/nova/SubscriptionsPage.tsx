@@ -1,7 +1,60 @@
-import { Badge, Card, PageHeader, StatTile, Toolbar, Input, Select } from "@/components/nova/ui";
-import { users, revenueSeries } from "@/lib/mockData";
+import { Badge, Card, PageHeader, StatTile } from "@/components/nova/ui";
+import { DataTable, Column } from "@/components/nova/DataTable";
+import { users, revenueSeries, User } from "@/lib/mockData";
 import { DollarSign, TrendingUp, TrendingDown, RefreshCw } from "lucide-react";
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+
+const priceFor = (plan: User["plan"]) => plan === "Pro Monthly" ? 9 : plan === "Pro Yearly" ? 84 : plan === "Lifetime" ? 199 : 0;
+
+const columns: Column<User>[] = [
+  {
+    key: "name",
+    header: "Customer",
+    accessor: (u) => `${u.name} ${u.email}`,
+    sortable: true,
+    render: (u) => (<div><div className="text-foreground font-medium">{u.name}</div><div className="text-xs text-muted-foreground">{u.email}</div></div>),
+  },
+  {
+    key: "plan",
+    header: "Plan",
+    accessor: (u) => u.plan,
+    sortable: true,
+    filterable: true,
+    filterOptions: [
+      { label: "Pro Monthly", value: "Pro Monthly" },
+      { label: "Pro Yearly", value: "Pro Yearly" },
+      { label: "Lifetime", value: "Lifetime" },
+    ],
+    render: (u) => <Badge tone={u.plan === "Lifetime" ? "primary" : "info"}>{u.plan}</Badge>,
+  },
+  {
+    key: "status",
+    header: "Status",
+    accessor: (u) => u.status,
+    sortable: true,
+    filterable: true,
+    filterOptions: [
+      { label: "Active", value: "active" },
+      { label: "Suspended", value: "suspended" },
+    ],
+    render: (u) => <Badge tone={u.status === "active" ? "success" : "danger"}>{u.status}</Badge>,
+  },
+  {
+    key: "mrr",
+    header: "MRR",
+    accessor: (u) => priceFor(u.plan),
+    sortable: true,
+    align: "right",
+    render: (u) => `$${priceFor(u.plan)}`,
+  },
+  {
+    key: "renews",
+    header: "Next renewal",
+    accessor: (u) => new Date(u.joined).getTime(),
+    sortable: true,
+    render: () => <span className="text-muted-foreground">{new Date(Date.now() + 30 * 86400000).toLocaleDateString()}</span>,
+  },
+];
 
 export default function SubscriptionsPage() {
   const paid = users.filter((u) => u.plan !== "Free");
@@ -42,36 +95,12 @@ export default function SubscriptionsPage() {
         </ResponsiveContainer>
       </Card>
 
-      <Toolbar>
-        <Input placeholder="Search subscribers…" className="w-72" />
-        <Select><option>All plans</option><option>Pro Monthly</option><option>Pro Yearly</option><option>Lifetime</option></Select>
-        <Select><option>Status: any</option><option>Active</option><option>Past due</option><option>Cancelled</option></Select>
-      </Toolbar>
-
-      <Card className="overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead><tr className="text-[11px] uppercase tracking-wider text-muted-foreground bg-muted/50">
-              <th className="text-left px-4 py-2.5">Customer</th><th className="text-left px-4 py-2.5">Plan</th><th className="text-left px-4 py-2.5">Status</th>
-              <th className="text-right px-4 py-2.5">MRR</th><th className="text-left px-4 py-2.5">Next renewal</th>
-            </tr></thead>
-            <tbody>
-              {paid.slice(0, 20).map((u) => (
-                <tr key={u.id} className="border-t border-border hover:bg-accent/40">
-                  <td className="px-4 py-2.5">
-                    <div className="text-foreground font-medium">{u.name}</div>
-                    <div className="text-xs text-muted-foreground">{u.email}</div>
-                  </td>
-                  <td className="px-4 py-2.5"><Badge tone={u.plan === "Lifetime" ? "primary" : "info"}>{u.plan}</Badge></td>
-                  <td className="px-4 py-2.5"><Badge tone="success">active</Badge></td>
-                  <td className="px-4 py-2.5 text-right tabular-nums">${u.plan === "Pro Monthly" ? 9 : u.plan === "Pro Yearly" ? 84 : 199}</td>
-                  <td className="px-4 py-2.5 text-muted-foreground">{new Date(Date.now() + 30 * 86400000).toLocaleDateString()}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </Card>
+      <DataTable
+        columns={columns}
+        rows={paid}
+        rowKey={(u) => u.id}
+        searchPlaceholder="Search subscribers…"
+      />
     </div>
   );
 }

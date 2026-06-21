@@ -1,7 +1,47 @@
-import { Card, PageHeader, StatTile, Badge } from "@/components/nova/ui";
+import { Badge, Card, PageHeader, StatTile } from "@/components/nova/ui";
+import { DataTable, Column } from "@/components/nova/DataTable";
 import { securitySeries, users } from "@/lib/mockData";
 import { ShieldAlert, AlertTriangle, KeyRound, ShieldCheck } from "lucide-react";
 import { Bar, BarChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+
+type Event = { id: string; event: string; user: string; ip: string; risk: string; minutesAgo: number };
+
+const events: Event[] = [
+  { id: "e1", event: "Impossible travel detected", user: "user2@acme.io", ip: "203.0.113.42", risk: "critical", minutesAgo: 3 },
+  { id: "e2", event: "10 failed login attempts", user: "user5@acme.io", ip: "198.51.100.7", risk: "high", minutesAgo: 15 },
+  { id: "e3", event: "New device from unknown country", user: "user9@acme.io", ip: "192.0.2.118", risk: "medium", minutesAgo: 27 },
+  { id: "e4", event: "Password found in breach dataset", user: "user12@acme.io", ip: "—", risk: "high", minutesAgo: 39 },
+  { id: "e5", event: "2FA disabled by user", user: "user18@acme.io", ip: "10.0.0.42", risk: "medium", minutesAgo: 51 },
+  { id: "e6", event: "Account lockout — 5x failed PIN", user: "user22@acme.io", ip: "172.16.0.9", risk: "low", minutesAgo: 75 },
+  { id: "e7", event: "Suspicious API key usage", user: "user31@globex.com", ip: "45.33.12.8", risk: "high", minutesAgo: 92 },
+  { id: "e8", event: "Brute force attempt blocked", user: "user42@hyperion.app", ip: "185.220.101.5", risk: "critical", minutesAgo: 110 },
+  { id: "e9", event: "Anomalous vault export", user: "user14@northwind.dev", ip: "8.8.4.4", risk: "high", minutesAgo: 145 },
+];
+
+const columns: Column<Event>[] = [
+  { key: "event", header: "Event", accessor: (e) => e.event, sortable: true, filterable: true },
+  { key: "user", header: "User", accessor: (e) => e.user, sortable: true, filterable: true },
+  { key: "ip", header: "IP", accessor: (e) => e.ip, render: (e) => <span className="font-mono text-xs text-muted-foreground">{e.ip}</span> },
+  {
+    key: "risk",
+    header: "Risk",
+    accessor: (e) => e.risk,
+    sortable: true,
+    filterable: true,
+    filterOptions: [
+      { label: "Critical", value: "critical" }, { label: "High", value: "high" },
+      { label: "Medium", value: "medium" }, { label: "Low", value: "low" },
+    ],
+    render: (e) => <Badge tone={e.risk === "critical" || e.risk === "high" ? "danger" : e.risk === "medium" ? "warning" : "muted"}>{e.risk}</Badge>,
+  },
+  {
+    key: "when",
+    header: "When",
+    accessor: (e) => e.minutesAgo,
+    sortable: true,
+    render: (e) => <span className="text-xs text-muted-foreground">{e.minutesAgo} min ago</span>,
+  },
+];
 
 export default function SecurityPage() {
   const twoFA = users.filter((u) => u.twoFA).length;
@@ -44,39 +84,8 @@ export default function SecurityPage() {
         </Card>
       </div>
 
-      <Card className="overflow-hidden">
-        <div className="p-4 border-b border-border flex items-center justify-between">
-          <h3 className="font-semibold text-foreground">Recent security events</h3>
-          <Badge tone="danger">3 critical</Badge>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead><tr className="text-[11px] uppercase tracking-wider text-muted-foreground bg-muted/50">
-              <th className="text-left px-4 py-2.5">Event</th><th className="text-left px-4 py-2.5">User</th>
-              <th className="text-left px-4 py-2.5">IP</th><th className="text-left px-4 py-2.5">Risk</th>
-              <th className="text-left px-4 py-2.5">When</th>
-            </tr></thead>
-            <tbody>
-              {[
-                { e: "Impossible travel detected", u: users[2], ip: "203.0.113.42", r: "critical" },
-                { e: "10 failed login attempts", u: users[5], ip: "198.51.100.7", r: "high" },
-                { e: "New device from unknown country", u: users[9], ip: "192.0.2.118", r: "medium" },
-                { e: "Password found in breach dataset", u: users[12], ip: "—", r: "high" },
-                { e: "2FA disabled by user", u: users[18], ip: "10.0.0.42", r: "medium" },
-                { e: "Account lockout — 5x failed PIN", u: users[22], ip: "172.16.0.9", r: "low" },
-              ].map((row, i) => (
-                <tr key={i} className="border-t border-border">
-                  <td className="px-4 py-2.5 text-foreground">{row.e}</td>
-                  <td className="px-4 py-2.5 text-muted-foreground">{row.u.email}</td>
-                  <td className="px-4 py-2.5 font-mono text-xs text-muted-foreground">{row.ip}</td>
-                  <td className="px-4 py-2.5"><Badge tone={row.r === "critical" || row.r === "high" ? "danger" : row.r === "medium" ? "warning" : "muted"}>{row.r}</Badge></td>
-                  <td className="px-4 py-2.5 text-xs text-muted-foreground">{i * 12 + 3} min ago</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </Card>
+      <h3 className="font-semibold text-foreground mb-3">Recent security events</h3>
+      <DataTable columns={columns} rows={events} rowKey={(e) => e.id} searchPlaceholder="Search events…" />
     </div>
   );
 }

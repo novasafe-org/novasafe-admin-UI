@@ -1,6 +1,24 @@
 import { Card, PageHeader, StatusDot, Badge } from "@/components/nova/ui";
+import { DataTable, Column } from "@/components/nova/DataTable";
 import { services } from "@/lib/mockData";
 import { Activity } from "lucide-react";
+
+type Service = (typeof services)[number];
+
+const columns: Column<Service>[] = [
+  { key: "name", header: "Service", accessor: (s) => s.name, sortable: true, render: (s) => <span className="font-medium text-foreground">{s.name}</span> },
+  {
+    key: "region", header: "Region", accessor: (s) => s.region, sortable: true, filterable: true,
+    filterOptions: Array.from(new Set(services.map((s) => s.region))).map((r) => ({ label: r, value: r })),
+  },
+  {
+    key: "status", header: "Status", accessor: (s) => s.status, sortable: true, filterable: true,
+    filterOptions: [{ label: "Operational", value: "operational" }, { label: "Degraded", value: "degraded" }, { label: "Outage", value: "outage" }],
+    render: (s) => <div className="flex items-center gap-2"><StatusDot status={s.status as any} /><span className="capitalize text-xs text-muted-foreground">{s.status}</span></div>,
+  },
+  { key: "latency", header: "Latency", accessor: (s) => s.latency, sortable: true, align: "right", render: (s) => `${s.latency}ms` },
+  { key: "uptime", header: "Uptime (90d)", accessor: (s) => s.uptime, sortable: true, align: "right", render: (s) => `${s.uptime}%` },
+];
 
 export default function SystemPage() {
   const allOps = services.every((s) => s.status === "operational");
@@ -21,28 +39,7 @@ export default function SystemPage() {
         <Badge tone={allOps ? "success" : "warning"}>{allOps ? "Operational" : "Degraded"}</Badge>
       </Card>
 
-      <Card className="overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead><tr className="text-[11px] uppercase tracking-wider text-muted-foreground bg-muted/50">
-              <th className="text-left px-4 py-2.5">Service</th><th className="text-left px-4 py-2.5">Region</th>
-              <th className="text-left px-4 py-2.5">Status</th><th className="text-right px-4 py-2.5">Latency</th>
-              <th className="text-right px-4 py-2.5">Uptime (90d)</th>
-            </tr></thead>
-            <tbody>
-              {services.map((s) => (
-                <tr key={s.name} className="border-t border-border">
-                  <td className="px-4 py-3 font-medium text-foreground">{s.name}</td>
-                  <td className="px-4 py-3 text-muted-foreground">{s.region}</td>
-                  <td className="px-4 py-3"><div className="flex items-center gap-2"><StatusDot status={s.status as any} /><span className="capitalize text-xs text-muted-foreground">{s.status}</span></div></td>
-                  <td className="px-4 py-3 text-right tabular-nums">{s.latency}ms</td>
-                  <td className="px-4 py-3 text-right tabular-nums">{s.uptime}%</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </Card>
+      <DataTable columns={columns} rows={services} rowKey={(s) => s.name} searchPlaceholder="Search services…" initialPageSize={25} />
     </div>
   );
 }
