@@ -1,6 +1,8 @@
+import { useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { Badge, Button, Card, PageHeader, StatTile } from "@/components/nova/ui";
 import { users, devices, auditLogs } from "@/lib/mockData";
+import { useLayout } from "@/context/LayoutContext";
 import { ArrowLeft, Mail, Ban, LogOut, Trash2, KeyRound, FileText, ShieldCheck, ShieldOff } from "lucide-react";
 
 export default function UserDetailPage() {
@@ -8,6 +10,11 @@ export default function UserDetailPage() {
   const user = users.find((u) => u.id === id) ?? users[0];
   const userDevices = devices.filter((d) => d.user === user.email);
   const userLogs = auditLogs.filter((l) => l.target === user.email).slice(0, 8);
+  const { setPageTitle } = useLayout();
+  useEffect(() => {
+    setPageTitle(user.name);
+    return () => setPageTitle(null);
+  }, [user.name, setPageTitle]);
 
   return (
     <div className="p-6 md:p-8 max-w-[1400px] mx-auto">
