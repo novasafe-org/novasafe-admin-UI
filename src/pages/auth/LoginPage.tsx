@@ -30,7 +30,7 @@ export default function LoginPage() {
     setLoading(true);
     const res = await login(email, password, remember);
     setLoading(false);
-    if (!res.ok) {
+    if ("error" in res) {
       setError(res.error);
       return;
     }
