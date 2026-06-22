@@ -8,6 +8,7 @@ import { useNova, Permission } from "@/context/NovaContext";
 import { useLayout } from "@/context/LayoutContext";
 import { getSecondaryNav } from "./secondaryNav";
 import { cn } from "@/lib/utils";
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 
 type Item = { to: string; label: string; icon: any; perm?: Permission };
 type Group = { title: string; items: Item[] };
@@ -107,7 +108,7 @@ export function NovaSidebar() {
               <div className="space-y-0.5">
                 {visible.map((item) => {
                   const active = pathname === item.to || (item.to !== "/" && pathname.startsWith(item.to));
-                  return (
+                  const link = (
                     <NavLink
                       key={item.to}
                       to={item.to}
@@ -118,12 +119,22 @@ export function NovaSidebar() {
                         collapsed && "justify-center px-0",
                         active && "bg-sidebar-accent text-sidebar-accent-foreground font-medium",
                       )}
-                      title={collapsed ? item.label : undefined}
                     >
                       <item.icon className="w-[16px] h-[16px] shrink-0" />
                       {!collapsed && <span className="truncate">{item.label}</span>}
                     </NavLink>
                   );
+                  if (collapsed) {
+                    return (
+                      <TooltipProvider key={item.to} delayDuration={100}>
+                        <Tooltip>
+                          <TooltipTrigger asChild>{link}</TooltipTrigger>
+                          <TooltipContent side="right" sideOffset={8}>{item.label}</TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    );
+                  }
+                  return link;
                 })}
               </div>
             </div>
