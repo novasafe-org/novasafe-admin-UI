@@ -8,6 +8,7 @@ import { useNova, Permission } from "@/context/NovaContext";
 import { useLayout } from "@/context/LayoutContext";
 import { getSecondaryNav } from "./secondaryNav";
 import { cn } from "@/lib/utils";
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 
 type Item = { to: string; label: string; icon: any; perm?: Permission };
 type Group = { title: string; items: Item[] };
