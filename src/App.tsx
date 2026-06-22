@@ -14,6 +14,8 @@ import SubscriptionsPage from "@/pages/nova/SubscriptionsPage";
 import SecurityPage from "@/pages/nova/SecurityPage";
 import DevicesPage from "@/pages/nova/DevicesPage";
 import ContentPage from "@/pages/nova/ContentPage";
+import BlogEditorPage from "@/pages/nova/BlogEditorPage";
+import MediaPage from "@/pages/nova/MediaPage";
 import DocsPage from "@/pages/nova/DocsPage";
 import ChangelogPage from "@/pages/nova/ChangelogPage";
 import AnnouncementsPage from "@/pages/nova/AnnouncementsPage";
@@ -63,6 +65,9 @@ const App = () => (
                     <Route path="/security" element={<SecurityPage />} />
                     <Route path="/audit" element={<AuditPage />} />
                     <Route path="/content" element={<ContentPage />} />
+                    <Route path="/content/new" element={<BlogEditorPage />} />
+                    <Route path="/content/edit/:id" element={<BlogEditorPage />} />
+                    <Route path="/content/media" element={<MediaPage />} />
                     <Route path="/docs" element={<DocsPage />} />
                     <Route path="/changelog" element={<ChangelogPage />} />
                     <Route path="/announcements" element={<AnnouncementsPage />} />

@@ -38,11 +38,11 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   return json.data as T;
 }
 
-async function blogRequest<T>(path: string, options: RequestInit = {}): Promise<T> {
+async function blogRequest<T>(path: string, options: RequestInit = {}): Promise<{ data: T; meta?: Record<string, unknown> }> {
   const token = getToken();
   const headers: Record<string, string> = {
     Accept: "application/json",
-    ...(options.body ? { "Content-Type": "application/json" } : {}),
+    ...(options.body && !(options.body instanceof FormData) ? { "Content-Type": "application/json" } : {}),
     ...(options.headers as Record<string, string> | undefined),
   };
   if (token) headers.Authorization = `Bearer ${token}`;
@@ -52,7 +52,7 @@ async function blogRequest<T>(path: string, options: RequestInit = {}): Promise<
   if (!res.ok) {
     throw new Error(json?.error?.message || json?.message || "Request failed");
   }
-  return (json?.data ?? json) as T;
+  return { data: (json?.data ?? json) as T, meta: json?.meta };
 }
 
 export const adminApi = {
@@ -143,14 +143,99 @@ export const adminApi = {
 
   statusServices: () => request<{ services: StatusService[] }>("/status/services"),
 
-  blogPosts: (params?: Record<string, string>) => {
+  listUsers: (params?: Record<string, string>) => {
     const qs = params ? new URLSearchParams(params).toString() : "";
-    return blogRequest<{ items: BlogPost[]; total: number }>(`/posts${qs ? `?${qs}` : ""}`);
+    return request<{ items: CustomerUser[]; total: number; page: number; limit: number }>(
+      `/users${qs ? `?${qs}` : ""}`,
+    );
   },
 
-  blogCategories: () => blogRequest<{ items: BlogCategory[] }>("/categories"),
+  getUser: (id: string) => request<CustomerUser>(`/users/${encodeURIComponent(id)}`),
 
-  blogTags: () => blogRequest<{ items: BlogTag[] }>("/tags"),
+  blogPosts: async (params?: Record<string, string>) => {
+    const qs = params ? new URLSearchParams(params).toString() : "";
+    const [postsRes, catsRes] = await Promise.all([
+      blogRequest<BlogPostDto[]>(`/posts${qs ? `?${qs}` : ""}`),
+      blogRequest<BlogCategoryDto[]>("/categories").catch(() => ({ data: [] as BlogCategoryDto[] })),
+    ]);
+    const catMap = new Map(catsRes.data.map((c) => [c.id, c.name]));
+    return {
+      items: postsRes.data.map((p) =>
+        normalizePost(p, p.category_id ? catMap.get(p.category_id) ?? "—" : "—"),
+      ),
+      total: Number(postsRes.meta?.total ?? postsRes.data.length),
+    };
+  },
+
+  blogPost: async (id: string) => {
+    const [postRes, catsRes] = await Promise.all([
+      blogRequest<BlogPostDto>(`/posts/id/${encodeURIComponent(id)}`),
+      blogRequest<BlogCategoryDto[]>("/categories").catch(() => ({ data: [] as BlogCategoryDto[] })),
+    ]);
+    const categoryName = postRes.data.category_id
+      ? catsRes.data.find((c) => c.id === postRes.data.category_id)?.name ?? "—"
+      : "—";
+    return normalizePost(postRes.data, categoryName);
+  },
+
+  createBlogPost: async (body: BlogPostInput) => {
+    const { data } = await blogRequest<BlogPostDto>("/posts", { method: "POST", body: JSON.stringify(body) });
+    return normalizePost(data);
+  },
+
+  updateBlogPost: async (id: string, body: Partial<BlogPostInput>) => {
+    const { data } = await blogRequest<BlogPostDto>(`/posts/${encodeURIComponent(id)}`, {
+      method: "PUT",
+      body: JSON.stringify(body),
+    });
+    return normalizePost(data);
+  },
+
+  deleteBlogPost: (id: string) =>
+    blogRequest<void>(`/posts/${encodeURIComponent(id)}`, { method: "DELETE" }),
+
+  blogCategories: async () => {
+    const { data } = await blogRequest<BlogCategoryDto[]>("/categories");
+    return { items: data.map((c) => ({ id: c.id, name: c.name, slug: c.slug })) };
+  },
+
+  createBlogCategory: async (name: string) => {
+    const { data } = await blogRequest<BlogCategoryDto>("/categories", {
+      method: "POST",
+      body: JSON.stringify({ name }),
+    });
+    return { id: data.id, name: data.name, slug: data.slug };
+  },
+
+  blogTags: async () => {
+    const { data } = await blogRequest<BlogTagDto[]>("/tags");
+    return { items: data.map((t) => ({ id: t.id, name: t.name, slug: t.slug })) };
+  },
+
+  createBlogTag: async (name: string) => {
+    const { data } = await blogRequest<BlogTagDto>("/tags", {
+      method: "POST",
+      body: JSON.stringify({ name }),
+    });
+    return { id: data.id, name: data.name, slug: data.slug };
+  },
+
+  blogMedia: async (params?: Record<string, string>) => {
+    const qs = params ? new URLSearchParams(params).toString() : "";
+    const { data, meta } = await blogRequest<BlogMediaDto[]>(`/media${qs ? `?${qs}` : ""}`);
+    return { items: data, total: Number(meta?.total ?? data.length) };
+  },
+
+  uploadBlogMedia: async (file: File, altText?: string) => {
+    const form = new FormData();
+    form.append("file", file);
+    if (altText) form.append("altText", altText);
+    const { data } = await blogRequest<BlogMediaDto>("/media/upload", { method: "POST", body: form });
+    return data;
+  },
+
+  deleteBlogMedia: (id: string) =>
+    blogRequest<void>(`/media/${encodeURIComponent(id)}`, { method: "DELETE" }),
 };
 
 export type AuthUserDto = {
@@ -184,15 +269,105 @@ export type BlogPost = {
   id: string;
   title: string;
   slug: string;
+  excerpt: string | null;
+  contentMarkdown: string;
+  featuredImage: string | null;
   status: string;
+  categoryId: string | null;
+  categoryName: string;
+  tagIds: string[];
   author?: { name?: string } | string;
-  category?: { name?: string } | string;
   viewCount?: number;
   views?: number;
   updatedAt?: string;
+  publishedAt?: string | null;
+  seoTitle?: string | null;
+  seoDescription?: string | null;
 };
 
 export type BlogCategory = { id: string; name: string; slug: string };
 export type BlogTag = { id: string; name: string; slug: string };
+
+export type CustomerUser = {
+  id: string;
+  name: string;
+  email: string;
+  plan: string;
+  status: string;
+  country: string;
+  devices: number;
+  vaultItems: number;
+  twoFA: boolean;
+  securityScore: number;
+  lastLogin: string | null;
+  createdAt: string;
+};
+
+type BlogPostDto = {
+  id: string;
+  title: string;
+  slug: string;
+  excerpt: string | null;
+  content_markdown: string;
+  featured_image: string | null;
+  status: string;
+  category_id: string | null;
+  tag_ids: string[];
+  author: { id: string; name: string; email?: string };
+  published_at: string | null;
+  created_at: string;
+  updated_at: string;
+  seo_title: string | null;
+  seo_description: string | null;
+};
+
+type BlogCategoryDto = { id: string; name: string; slug: string };
+type BlogTagDto = { id: string; name: string; slug: string };
+export type BlogMediaDto = {
+  id: string;
+  filename: string;
+  original_name: string;
+  url: string;
+  mime_type: string;
+  size: number;
+  alt_text: string | null;
+  uploaded_at: string;
+};
+
+export type BlogPostInput = {
+  title: string;
+  slug?: string;
+  excerpt?: string | null;
+  content_markdown?: string;
+  featured_image?: string | null;
+  status?: string;
+  category_id?: string | null;
+  tag_ids?: string[];
+  seo_title?: string | null;
+  seo_description?: string | null;
+  published_at?: string | null;
+};
+
+function normalizePost(dto: BlogPostDto, categoryName = "—"): BlogPost {
+  return {
+    id: dto.id,
+    title: dto.title,
+    slug: dto.slug,
+    excerpt: dto.excerpt,
+    contentMarkdown: dto.content_markdown,
+    featuredImage: dto.featured_image,
+    status: dto.status,
+    categoryId: dto.category_id,
+    categoryName,
+    tagIds: dto.tag_ids ?? [],
+    author: dto.author,
+    updatedAt: dto.updated_at,
+    publishedAt: dto.published_at,
+    seoTitle: dto.seo_title,
+    seoDescription: dto.seo_description,
+  };
+}
+
+export { normalizePost };
 
 export { API_BASE, getToken };

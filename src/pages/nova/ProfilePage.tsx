@@ -10,6 +10,7 @@ function fmtDate(iso: string) {
 export default function ProfilePage() {
   const { user } = useAuth();
   if (!user) return null;
+  const roleLabel = (user.role || "member").toUpperCase();
   return (
     <div className="p-6 md:p-8 max-w-5xl">
       <PageHeader
@@ -31,7 +32,7 @@ export default function ProfilePage() {
           <div>
             <div className="flex items-center gap-2">
               <h2 className="text-lg font-semibold text-foreground">{user.name}</h2>
-              <Badge tone="primary">{user.role.toUpperCase()}</Badge>
+              <Badge tone="primary">{roleLabel}</Badge>
             </div>
             <p className="text-sm text-muted-foreground">{user.email}</p>
           </div>
@@ -43,7 +44,7 @@ export default function ProfilePage() {
           <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">Contact</div>
           <Row icon={<Mail className="w-4 h-4" />} label="Email" value={user.email} />
           <Row icon={<KeyRound className="w-4 h-4" />} label="User ID" value={user.id} mono />
-          <Row icon={<Shield className="w-4 h-4" />} label="Role" value={user.role} cap />
+          <Row icon={<Shield className="w-4 h-4" />} label="Role" value={user.role || "member"} cap />
         </Card>
         <Card className="p-5">
           <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">Activity</div>

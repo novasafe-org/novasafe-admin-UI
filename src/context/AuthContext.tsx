@@ -49,12 +49,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const cached = JSON.parse(raw) as AuthUser;
       if (!cached.accessToken) return;
       const data = await adminApi.me();
+      const role = data.user.role || (data.user as { roleKey?: string }).roleKey || cached.role;
       const next: AuthUser = {
         ...cached,
         ...data.user,
-        role: data.user.role as Role,
+        role: role as Role,
         permissions: data.permissions,
-        lastLogin: new Date().toISOString(),
+        lastLogin: data.user.lastLogin || cached.lastLogin,
       };
       setUser(next);
       const store = localStorage.getItem(STORAGE_KEY) ? localStorage : sessionStorage;
