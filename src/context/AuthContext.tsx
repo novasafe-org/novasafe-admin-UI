@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import type { Role } from "./NovaContext";
+import { adminApi, type PermissionAction } from "@/lib/api";
 
 export type AuthUser = {
   id: string;
@@ -9,46 +10,22 @@ export type AuthUser = {
   avatar?: string;
   createdAt: string;
   lastLogin: string;
+  accessToken: string;
+  permissions: Record<string, PermissionAction>;
 };
-
-type MockAccount = AuthUser & { password: string };
-
-export const MOCK_ACCOUNTS: MockAccount[] = [
-  {
-    id: "u_owner",
-    name: "Nova Operator",
-    email: "owner@novasafe.io",
-    password: "Owner@123",
-    role: "owner",
-    createdAt: "2024-02-12T10:24:00Z",
-    lastLogin: "2026-06-22T08:14:00Z",
-  },
-  {
-    id: "u_admin",
-    name: "Content Admin",
-    email: "admin@novasafe.io",
-    password: "Admin@123",
-    role: "admin",
-    createdAt: "2024-08-03T15:11:00Z",
-    lastLogin: "2026-06-21T19:02:00Z",
-  },
-  {
-    id: "u_member",
-    name: "Read Only User",
-    email: "member@novasafe.io",
-    password: "Member@123",
-    role: "member",
-    createdAt: "2025-01-22T09:45:00Z",
-    lastLogin: "2026-06-20T11:33:00Z",
-  },
-];
 
 type Ctx = {
   user: AuthUser | null;
   isAuthenticated: boolean;
   loading: boolean;
   login: (email: string, password: string, remember?: boolean) => Promise<{ ok: true } | { ok: false; error: string }>;
+  establishSession: (data: {
+    accessToken: string;
+    user: { id: string; name: string; email: string; role: string; avatar?: string; lastLogin?: string };
+    permissions: Record<string, import("@/lib/api").PermissionAction>;
+  }, remember?: boolean) => void;
   logout: () => void;
+  refreshSession: () => Promise<void>;
 };
 
 const AuthCtx = createContext<Ctx | null>(null);
@@ -58,28 +35,75 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY) || sessionStorage.getItem(STORAGE_KEY);
-      if (raw) setUser(JSON.parse(raw));
-    } catch {}
-    setLoading(false);
-  }, []);
-
-  const login: Ctx["login"] = async (email, password, remember = true) => {
-    await new Promise((r) => setTimeout(r, 450));
-    const match = MOCK_ACCOUNTS.find(
-      (a) => a.email.toLowerCase() === email.trim().toLowerCase() && a.password === password,
-    );
-    if (!match) return { ok: false, error: "Invalid email or password." };
-    const { password: _p, ...u } = match;
-    const session: AuthUser = { ...u, lastLogin: new Date().toISOString() };
-    setUser(session);
+  const persist = (session: AuthUser, remember: boolean) => {
     const store = remember ? localStorage : sessionStorage;
     store.setItem(STORAGE_KEY, JSON.stringify(session));
     (remember ? sessionStorage : localStorage).removeItem(STORAGE_KEY);
     localStorage.setItem("nova:role", session.role);
-    return { ok: true };
+  };
+
+  const refreshSession = async () => {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY) || sessionStorage.getItem(STORAGE_KEY);
+      if (!raw) return;
+      const cached = JSON.parse(raw) as AuthUser;
+      if (!cached.accessToken) return;
+      const data = await adminApi.me();
+      const next: AuthUser = {
+        ...cached,
+        ...data.user,
+        role: data.user.role as Role,
+        permissions: data.permissions,
+        lastLogin: new Date().toISOString(),
+      };
+      setUser(next);
+      const store = localStorage.getItem(STORAGE_KEY) ? localStorage : sessionStorage;
+      store.setItem(STORAGE_KEY, JSON.stringify(next));
+    } catch {
+      setUser(null);
+      localStorage.removeItem(STORAGE_KEY);
+      sessionStorage.removeItem(STORAGE_KEY);
+    }
+  };
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY) || sessionStorage.getItem(STORAGE_KEY);
+        if (raw) {
+          const cached = JSON.parse(raw) as AuthUser;
+          setUser(cached);
+          await refreshSession();
+        }
+      } catch {}
+      setLoading(false);
+    })();
+  }, []);
+
+  const establishSession: Ctx["establishSession"] = (data, remember = true) => {
+    const session: AuthUser = {
+      id: data.user.id,
+      name: data.user.name,
+      email: data.user.email,
+      role: data.user.role as Role,
+      avatar: data.user.avatar,
+      createdAt: new Date().toISOString(),
+      lastLogin: data.user.lastLogin || new Date().toISOString(),
+      accessToken: data.accessToken,
+      permissions: data.permissions,
+    };
+    setUser(session);
+    persist(session, remember);
+  };
+
+  const login: Ctx["login"] = async (email, password, remember = true) => {
+    try {
+      const data = await adminApi.login(email, password);
+      establishSession(data, remember);
+      return { ok: true };
+    } catch (err) {
+      return { ok: false, error: err instanceof Error ? err.message : "Login failed" };
+    }
   };
 
   const logout = () => {
@@ -89,7 +113,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthCtx.Provider value={{ user, isAuthenticated: !!user, loading, login, logout }}>
+    <AuthCtx.Provider value={{ user, isAuthenticated: !!user, loading, login, establishSession, logout, refreshSession }}>
       {children}
     </AuthCtx.Provider>
   );

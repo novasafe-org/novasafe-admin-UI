@@ -1,27 +1,67 @@
+import { useEffect, useMemo, useState } from "react";
 import { Card, PageHeader, StatusDot, Badge } from "@/components/nova/ui";
 import { DataTable, Column } from "@/components/nova/DataTable";
-import { services } from "@/lib/mockData";
+import { adminApi, type StatusService } from "@/lib/api";
 import { Activity } from "lucide-react";
 
-type Service = (typeof services)[number];
+type Row = {
+  id: string;
+  name: string;
+  region: string;
+  status: string;
+  latency: number;
+  uptime: number;
+};
 
-const columns: Column<Service>[] = [
+const columns: Column<Row>[] = [
   { key: "name", header: "Service", accessor: (s) => s.name, sortable: true, render: (s) => <span className="font-medium text-foreground">{s.name}</span> },
-  {
-    key: "region", header: "Region", accessor: (s) => s.region, sortable: true, filterable: true,
-    filterOptions: Array.from(new Set(services.map((s) => s.region))).map((r) => ({ label: r, value: r })),
-  },
+  { key: "region", header: "Region", accessor: (s) => s.region, sortable: true, filterable: true },
   {
     key: "status", header: "Status", accessor: (s) => s.status, sortable: true, filterable: true,
     filterOptions: [{ label: "Operational", value: "operational" }, { label: "Degraded", value: "degraded" }, { label: "Outage", value: "outage" }],
-    render: (s) => <div className="flex items-center gap-2"><StatusDot status={s.status as any} /><span className="capitalize text-xs text-muted-foreground">{s.status}</span></div>,
+    render: (s) => (
+      <div className="flex items-center gap-2">
+        <StatusDot status={s.status as "operational" | "degraded" | "outage"} />
+        <span className="capitalize text-xs text-muted-foreground">{s.status}</span>
+      </div>
+    ),
   },
   { key: "latency", header: "Latency", accessor: (s) => s.latency, sortable: true, align: "right", render: (s) => `${s.latency}ms` },
   { key: "uptime", header: "Uptime (90d)", accessor: (s) => s.uptime, sortable: true, align: "right", render: (s) => `${s.uptime}%` },
 ];
 
+function mapService(s: StatusService, index: number): Row {
+  return {
+    id: s.id || s.slug || String(index),
+    name: s.name,
+    region: s.region || "Global",
+    status: s.status,
+    latency: s.latencyMs ?? s.latency ?? 0,
+    uptime: s.uptime90d ?? s.uptime ?? 100,
+  };
+}
+
 export default function SystemPage() {
-  const allOps = services.every((s) => s.status === "operational");
+  const [rows, setRows] = useState<Row[]>([]);
+  const [overall, setOverall] = useState("operational");
+
+  useEffect(() => {
+    Promise.all([adminApi.statusOverview(), adminApi.statusServices()])
+      .then(([overview, servicesRes]) => {
+        setOverall(overview.status || "operational");
+        const list = servicesRes.services?.length ? servicesRes.services : overview.services || [];
+        setRows(list.map(mapService));
+      })
+      .catch(() => {});
+  }, []);
+
+  const allOps = rows.length ? rows.every((s) => s.status === "operational") : overall === "operational";
+  const regionFilters = useMemo(
+    () => Array.from(new Set(rows.map((s) => s.region))).map((r) => ({ label: r, value: r })),
+    [rows],
+  );
+  const cols = columns.map((c) => (c.key === "region" ? { ...c, filterOptions: regionFilters } : c));
+
   return (
     <div className="p-6 md:p-8 max-w-[1200px] mx-auto">
       <PageHeader eyebrow="Platform" title="System Status" description="Real-time health of every service powering NovaSafe." />
@@ -39,7 +79,7 @@ export default function SystemPage() {
         <Badge tone={allOps ? "success" : "warning"}>{allOps ? "Operational" : "Degraded"}</Badge>
       </Card>
 
-      <DataTable columns={columns} rows={services} rowKey={(s) => s.name} searchPlaceholder="Search services…" initialPageSize={25} />
+      <DataTable columns={cols} rows={rows} rowKey={(s) => s.id} searchPlaceholder="Search services…" initialPageSize={25} />
     </div>
   );
 }

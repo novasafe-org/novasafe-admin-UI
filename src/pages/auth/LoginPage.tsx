@@ -3,8 +3,14 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Eye, EyeOff, Loader2, Sparkles, AlertCircle, Copy, Check } from "lucide-react";
 import { AuthLayout } from "@/components/auth/AuthLayout";
 import { Button, Input } from "@/components/nova/ui";
-import { useAuth, MOCK_ACCOUNTS } from "@/context/AuthContext";
+import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
+
+const DEMO_ACCOUNTS = [
+  { name: "Nova Operator", email: "owner@novasafe.io", password: "Owner@123", role: "owner" },
+  { name: "Content Admin", email: "admin@novasafe.io", password: "Admin@123", role: "admin" },
+  { name: "Read Only User", email: "member@novasafe.io", password: "Member@123", role: "member" },
+];
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -30,7 +36,7 @@ export default function LoginPage() {
     setLoading(true);
     const res = await login(email, password, remember);
     setLoading(false);
-    if ("error" in res) {
+    if (!res.ok) {
       setError(res.error);
       return;
     }
@@ -134,7 +140,7 @@ export default function LoginPage() {
 
         {demoOpen && (
           <div className="mt-2 rounded-lg border border-border bg-muted/40 divide-y divide-border overflow-hidden">
-            {MOCK_ACCOUNTS.map((a) => (
+            {DEMO_ACCOUNTS.map((a) => (
               <div key={a.email} className="p-3 flex items-center gap-3">
                 <div className="w-8 h-8 rounded-full gradient-primary text-primary-foreground text-xs font-semibold flex items-center justify-center shrink-0">
                   {a.name.split(" ").map((n) => n[0]).slice(0, 2).join("")}

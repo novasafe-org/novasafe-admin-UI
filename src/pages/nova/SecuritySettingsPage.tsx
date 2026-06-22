@@ -2,6 +2,7 @@ import { FormEvent, useState } from "react";
 import { MonitorSmartphone, ShieldCheck, KeyRound, Loader2, CheckCircle2 } from "lucide-react";
 import { PageHeader, Card, Button, Input, Badge } from "@/components/nova/ui";
 import { useAuth } from "@/context/AuthContext";
+import { adminApi } from "@/lib/api";
 import { toast } from "sonner";
 
 const recent = [
@@ -26,10 +27,15 @@ export default function SecuritySettingsPage() {
       return;
     }
     setSaving(true);
-    await new Promise((r) => setTimeout(r, 600));
-    setSaving(false);
-    setCur(""); setN1(""); setN2("");
-    toast.success("Password updated successfully");
+    try {
+      await adminApi.changePassword(cur, n1);
+      setCur(""); setN1(""); setN2("");
+      toast.success("Password updated successfully");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not update password");
+    } finally {
+      setSaving(false);
+    }
   }
 
   if (!user) return null;

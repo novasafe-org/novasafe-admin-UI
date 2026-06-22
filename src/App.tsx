@@ -7,7 +7,6 @@ import { NovaProvider } from "@/context/NovaContext";
 import { AuthProvider } from "@/context/AuthContext";
 import { NovaLayout } from "@/components/nova/NovaLayout";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
-import { RoleGuard } from "@/components/auth/RoleGuard";
 import DashboardPage from "@/pages/nova/DashboardPage";
 import UsersPage from "@/pages/nova/UsersPage";
 import UserDetailPage from "@/pages/nova/UserDetailPage";
@@ -27,6 +26,7 @@ import SettingsPage from "@/pages/nova/SettingsPage";
 import ProfilePage from "@/pages/nova/ProfilePage";
 import SecuritySettingsPage from "@/pages/nova/SecuritySettingsPage";
 import LoginPage from "@/pages/auth/LoginPage";
+import AcceptInvitePage from "@/pages/auth/AcceptInvitePage";
 import ForgotPasswordPage from "@/pages/auth/ForgotPasswordPage";
 import ResetPasswordPage from "@/pages/auth/ResetPasswordPage";
 import UnauthorizedPage from "@/pages/auth/UnauthorizedPage";
@@ -45,6 +45,7 @@ const App = () => (
               <Routes>
                 {/* Public auth routes */}
                 <Route path="/login" element={<LoginPage />} />
+                <Route path="/accept-invite" element={<AcceptInvitePage />} />
                 <Route path="/forgot-password" element={<ForgotPasswordPage />} />
                 <Route path="/reset-password" element={<ResetPasswordPage />} />
                 <Route path="/unauthorized" element={<UnauthorizedPage />} />
@@ -66,14 +67,10 @@ const App = () => (
                     <Route path="/changelog" element={<ChangelogPage />} />
                     <Route path="/announcements" element={<AnnouncementsPage />} />
                     <Route path="/system" element={<SystemPage />} />
+                    <Route path="/rbac" element={<RBACPage />} />
+                    <Route path="/settings" element={<SettingsPage />} />
                     <Route path="/profile" element={<ProfilePage />} />
                     <Route path="/profile/security" element={<SecuritySettingsPage />} />
-
-                    {/* Owner-only */}
-                    <Route element={<RoleGuard roles={["owner"]} />}>
-                      <Route path="/rbac" element={<RBACPage />} />
-                      <Route path="/settings" element={<SettingsPage />} />
-                    </Route>
                   </Route>
                 </Route>
 

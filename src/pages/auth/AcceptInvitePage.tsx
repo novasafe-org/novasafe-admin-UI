@@ -1,10 +1,13 @@
-import { FormEvent, useMemo, useState } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { FormEvent, useEffect, useMemo, useState } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { CheckCircle2, Eye, EyeOff, Loader2, AlertCircle } from "lucide-react";
 import { AuthLayout } from "@/components/auth/AuthLayout";
 import { Button, Input } from "@/components/nova/ui";
 import { adminApi } from "@/lib/api";
+import { useAuth } from "@/context/AuthContext";
+import { adminApi } from "@/lib/api";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 function scorePassword(pw: string) {
   let s = 0;
@@ -16,44 +19,75 @@ function scorePassword(pw: string) {
   return Math.min(s, 4);
 }
 
-export default function ResetPasswordPage() {
+export default function AcceptInvitePage() {
   const [params] = useSearchParams();
   const token = params.get("token") || "";
+  const nav = useNavigate();
+  const { establishSession } = useAuth();
 
+  const [name, setName] = useState("");
   const [pw, setPw] = useState("");
   const [pw2, setPw2] = useState("");
   const [show, setShow] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [done, setDone] = useState(false);
+  const [validating, setValidating] = useState(true);
+  const [invite, setInvite] = useState<{ email: string; roleKey: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [done, setDone] = useState(false);
 
   const score = useMemo(() => scorePassword(pw), [pw]);
   const strengthLabels = ["Too weak", "Weak", "Fair", "Good", "Strong"];
   const strengthColors = ["bg-destructive", "bg-destructive", "bg-warning", "bg-primary", "bg-success"];
 
+  useEffect(() => {
+    if (!token) {
+      setError("Missing invite token.");
+      setValidating(false);
+      return;
+    }
+    adminApi
+      .validateInvite(token)
+      .then((data) => {
+        setInvite(data);
+        setName(data.email.split("@")[0]);
+      })
+      .catch((err) => setError(err instanceof Error ? err.message : "Invalid invite"))
+      .finally(() => setValidating(false));
+  }, [token]);
+
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
     setError(null);
-    if (!token) return setError("Missing reset token. Use the link from your email.");
     if (pw.length < 8) return setError("Password must be at least 8 characters.");
     if (pw !== pw2) return setError("Passwords do not match.");
     setLoading(true);
     try {
-      await adminApi.resetPassword(token, pw);
+      const data = await adminApi.acceptInvite({ token, name, password: pw });
+      establishSession(data);
       setDone(true);
+      toast.success("Account created — welcome!");
+      setTimeout(() => nav("/", { replace: true }), 1200);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Reset failed");
+      setError(err instanceof Error ? err.message : "Could not accept invite");
     } finally {
       setLoading(false);
     }
   }
 
-  if (!token && !done) {
+  if (validating) {
     return (
-      <AuthLayout title="Invalid reset link" subtitle="This link is missing a token or has expired." footer={<Link to="/forgot-password">Request a new link</Link>}>
+      <AuthLayout title="Checking invite…" subtitle="Please wait.">
+        <div className="flex justify-center py-8"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>
+      </AuthLayout>
+    );
+  }
+
+  if (!invite && error) {
+    return (
+      <AuthLayout title="Invalid invite" subtitle={error} footer={<Link to="/login">Back to sign in</Link>}>
         <div className="flex items-start gap-2 px-3 py-2.5 rounded-md border border-destructive/30 bg-destructive/10 text-destructive text-sm">
           <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
-          <span>Go to forgot password and request a new reset link.</span>
+          <span>Ask your workspace owner to send a new invite.</span>
         </div>
       </AuthLayout>
     );
@@ -61,33 +95,30 @@ export default function ResetPasswordPage() {
 
   return (
     <AuthLayout
-      title={done ? "Password updated" : "Set a new password"}
-      subtitle={done ? "You can now sign in with your new password." : "Choose a strong password you haven't used before."}
+      title={done ? "You're all set" : "Join NovaSafe Admin"}
+      subtitle={
+        done
+          ? "Redirecting to your dashboard…"
+          : `Create your password for ${invite?.email} (${invite?.roleKey} role).`
+      }
       footer={<Link to="/login" className="text-foreground hover:text-primary">Back to sign in</Link>}
     >
       {done ? (
         <div className="rounded-lg border border-success/30 bg-success/10 p-4 text-sm flex items-start gap-3">
           <CheckCircle2 className="w-5 h-5 text-success mt-0.5" />
-          <div>
-            <div className="font-medium text-foreground">All done!</div>
-            <div className="text-muted-foreground mt-1">Your password has been reset successfully.</div>
-            <Link
-              to="/login"
-              className="mt-3 inline-flex h-9 px-3.5 rounded-md text-sm font-medium gradient-primary text-primary-foreground shadow-primary"
-            >
-              Continue to sign in
-            </Link>
-          </div>
+          <div className="font-medium text-foreground">Account ready</div>
         </div>
       ) : (
         <form onSubmit={onSubmit} className="space-y-4">
           {error && (
-            <div className="px-3 py-2.5 rounded-md border border-destructive/30 bg-destructive/10 text-destructive text-sm">
-              {error}
-            </div>
+            <div className="px-3 py-2.5 rounded-md border border-destructive/30 bg-destructive/10 text-destructive text-sm">{error}</div>
           )}
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-foreground">New password</label>
+            <label className="text-xs font-medium text-foreground">Display name</label>
+            <Input value={name} onChange={(e) => setName(e.target.value)} className="w-full h-10" />
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-foreground">Password</label>
             <div className="relative">
               <Input
                 type={show ? "text" : "password"}
@@ -116,7 +147,7 @@ export default function ResetPasswordPage() {
             <Input type={show ? "text" : "password"} value={pw2} onChange={(e) => setPw2(e.target.value)} className="w-full h-10" />
           </div>
           <Button type="submit" disabled={loading} className="w-full h-10 justify-center">
-            {loading ? <><Loader2 className="w-4 h-4 animate-spin" />Updating…</> : "Reset password"}
+            {loading ? <><Loader2 className="w-4 h-4 animate-spin" />Creating account…</> : "Create account"}
           </Button>
         </form>
       )}
