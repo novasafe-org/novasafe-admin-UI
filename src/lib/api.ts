@@ -50,7 +50,12 @@ async function blogRequest<T>(path: string, options: RequestInit = {}): Promise<
   const res = await fetch(`${API_BASE}${path}`, { ...options, headers });
   const json = await res.json().catch(() => ({}));
   if (!res.ok) {
-    throw new Error(json?.error?.message || json?.message || "Request failed");
+    const msg =
+      json?.error?.message ||
+      json?.message ||
+      (typeof json?.error === "string" ? json.error : null) ||
+      "Request failed";
+    throw new Error(msg);
   }
   return { data: (json?.data ?? json) as T, meta: json?.meta };
 }
@@ -200,9 +205,15 @@ export const adminApi = {
   },
 
   createBlogCategory: async (name: string) => {
+    const slug = name
+      .trim()
+      .toLowerCase()
+      .replace(/[^\w\s-]/g, "")
+      .replace(/[\s_-]+/g, "-")
+      .replace(/^-+|-+$/g, "");
     const { data } = await blogRequest<BlogCategoryDto>("/categories", {
       method: "POST",
-      body: JSON.stringify({ name }),
+      body: JSON.stringify({ name: name.trim(), slug: slug || undefined }),
     });
     return { id: data.id, name: data.name, slug: data.slug };
   },
