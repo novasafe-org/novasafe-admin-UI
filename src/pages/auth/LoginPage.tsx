@@ -1,16 +1,10 @@
 import { FormEvent, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Eye, EyeOff, Loader2, Sparkles, AlertCircle, Copy, Check } from "lucide-react";
+import { Eye, EyeOff, Loader2, AlertCircle } from "lucide-react";
 import { AuthLayout } from "@/components/auth/AuthLayout";
 import { Button, Input } from "@/components/nova/ui";
 import { useAuth } from "@/context/AuthContext";
 import { toast } from "sonner";
-
-const DEMO_ACCOUNTS = [
-  { name: "Nova Operator", email: "owner@novasafe.io", password: "Owner@123", role: "owner" },
-  { name: "Content Admin", email: "admin@novasafe.io", password: "Admin@123", role: "admin" },
-  { name: "Read Only User", email: "member@novasafe.io", password: "Member@123", role: "member" },
-];
 
 export default function LoginPage() {
   const { login } = useAuth();
@@ -23,8 +17,6 @@ export default function LoginPage() {
   const [remember, setRemember] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [demoOpen, setDemoOpen] = useState(false);
-  const [copied, setCopied] = useState<string | null>(null);
 
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
@@ -42,18 +34,6 @@ export default function LoginPage() {
     }
     toast.success("Welcome back!");
     nav(loc.state?.from || "/", { replace: true });
-  }
-
-  function fillDemo(e: string, p: string) {
-    setEmail(e);
-    setPassword(p);
-    setDemoOpen(false);
-  }
-
-  function copy(text: string, key: string) {
-    navigator.clipboard.writeText(text);
-    setCopied(key);
-    setTimeout(() => setCopied(null), 1200);
   }
 
   return (
@@ -128,53 +108,6 @@ export default function LoginPage() {
         <Button type="submit" disabled={loading} className="w-full h-10 justify-center">
           {loading ? <><Loader2 className="w-4 h-4 animate-spin" />Signing in…</> : "Sign In"}
         </Button>
-
-        <button
-          type="button"
-          onClick={() => setDemoOpen((v) => !v)}
-          className="w-full h-10 inline-flex items-center justify-center gap-1.5 rounded-md border border-input bg-card text-sm font-medium text-foreground hover:bg-accent transition-colors"
-        >
-          <Sparkles className="w-4 h-4 text-primary" />
-          {demoOpen ? "Hide demo credentials" : "Demo Credentials"}
-        </button>
-
-        {demoOpen && (
-          <div className="mt-2 rounded-lg border border-border bg-muted/40 divide-y divide-border overflow-hidden">
-            {DEMO_ACCOUNTS.map((a) => (
-              <div key={a.email} className="p-3 flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full gradient-primary text-primary-foreground text-xs font-semibold flex items-center justify-center shrink-0">
-                  {a.name.split(" ").map((n) => n[0]).slice(0, 2).join("")}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="text-[13px] font-medium text-foreground flex items-center gap-2">
-                    {a.name}
-                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/10 text-primary uppercase tracking-wider font-semibold">
-                      {a.role}
-                    </span>
-                  </div>
-                  <div className="text-[11px] text-muted-foreground font-mono truncate">
-                    {a.email} / {a.password}
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => copy(`${a.email} / ${a.password}`, a.email)}
-                  className="p-1.5 rounded text-muted-foreground hover:text-foreground hover:bg-accent"
-                  title="Copy"
-                >
-                  {copied === a.email ? <Check className="w-3.5 h-3.5 text-success" /> : <Copy className="w-3.5 h-3.5" />}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => fillDemo(a.email, a.password)}
-                  className="text-[11px] font-medium text-primary hover:underline"
-                >
-                  Use
-                </button>
-              </div>
-            ))}
-          </div>
-        )}
       </form>
     </AuthLayout>
   );
