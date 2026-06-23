@@ -43,7 +43,7 @@ const groups: Group[] = [
     items: [
       { to: "/content", label: "Blog", icon: FileText, perm: "content.manage" },
       { to: "/docs", label: "Documentation", icon: BookOpen, perm: "docs.manage" },
-      { to: "/changelog", label: "Changelog", icon: Sparkles, perm: "announcements.manage" },
+      { to: "/changelog", label: "Changelog", icon: Sparkles, perm: "changelog.read" },
       { to: "/announcements", label: "Announcements", icon: Megaphone, perm: "announcements.manage" },
     ],
   },

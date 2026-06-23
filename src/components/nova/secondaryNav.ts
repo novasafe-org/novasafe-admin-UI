@@ -198,11 +198,18 @@ export const SECONDARY_NAV: { match: (path: string) => boolean; nav: SecondaryNa
       title: "Changelog",
       description: "Release notes",
       groups: [
-        { items: [
+        { title: "Releases", items: [
           { to: "/changelog", label: "All releases" },
-          { to: "/changelog?type=Feature", label: "Features" },
-          { to: "/changelog?type=Security", label: "Security" },
-          { to: "/changelog?type=Bug+Fix", label: "Bug fixes" },
+          { to: "/changelog?status=published", label: "Published" },
+          { to: "/changelog?status=draft", label: "Drafts" },
+          { to: "/changelog?status=scheduled", label: "Scheduled" },
+        ]},
+        { title: "By category", items: [
+          { to: "/changelog?category=feature", label: "Features" },
+          { to: "/changelog?category=improvement", label: "Improvements" },
+          { to: "/changelog?category=security", label: "Security" },
+          { to: "/changelog?category=bugfix", label: "Bug fixes" },
+          { to: "/changelog?category=performance", label: "Performance" },
         ]},
       ],
     },
@@ -226,13 +233,13 @@ export const SECONDARY_NAV: { match: (path: string) => boolean; nav: SecondaryNa
     match: (p) => p.startsWith("/system"),
     nav: {
       title: "System",
-      description: "Infrastructure",
+      description: "Operations center",
       groups: [
-        { items: [
-          { to: "/system", label: "Services" },
-          { to: "/system#incidents", label: "Incidents" },
-          { to: "/system#regions", label: "Regions" },
-          { to: "/system#webhooks", label: "Webhooks" },
+        { title: "Overview", items: [
+          { to: "/system", label: "Operations center" },
+          { to: "/system#services", label: "Services" },
+          { to: "/system#incidents", label: "Active incidents" },
+          { to: "/system#maintenance", label: "Maintenance" },
         ]},
       ],
     },

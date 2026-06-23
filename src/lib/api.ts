@@ -120,33 +120,59 @@ export const adminApi = {
       body: JSON.stringify({ email, roleKey }),
     }),
 
-  changelogList: () =>
-    request<
-      Array<{
-        id: string;
-        version: string;
-        title: string;
-        category: string;
-        summary: string;
-        notes: string[];
-        publishedAt: string;
-        isPublic: boolean;
-        slug: string;
-      }>
-    >("/changelog"),
+  changelogList: () => request<ChangelogRelease[]>("/changelog"),
 
-  createChangelog: (body: Record<string, unknown>) =>
-    request<unknown>("/changelog", { method: "POST", body: JSON.stringify(body) }),
+  changelogGet: (id: string) => request<ChangelogRelease>(`/changelog/${encodeURIComponent(id)}`),
 
-  updateChangelog: (id: string, body: Record<string, unknown>) =>
-    request<void>(`/changelog/${id}`, { method: "PUT", body: JSON.stringify(body) }),
+  createChangelog: (body: ChangelogInput) =>
+    request<ChangelogRelease>("/changelog", { method: "POST", body: JSON.stringify(body) }),
+
+  updateChangelog: (id: string, body: Partial<ChangelogInput>) =>
+    request<ChangelogRelease>(`/changelog/${encodeURIComponent(id)}`, {
+      method: "PUT",
+      body: JSON.stringify(body),
+    }),
 
   deleteChangelog: (id: string) =>
-    request<void>(`/changelog/${id}`, { method: "DELETE" }),
+    request<void>(`/changelog/${encodeURIComponent(id)}`, { method: "DELETE" }),
 
   statusOverview: () => request<StatusOverview>("/status/overview"),
 
-  statusServices: () => request<{ services: StatusService[] }>("/status/services"),
+  statusServices: () => request<StatusService[]>("/status/services"),
+
+  statusIncidents: async (params?: Record<string, string>) => {
+    const qs = params ? `?${new URLSearchParams(params)}` : "";
+    const token = getToken();
+    const res = await fetch(`${API_BASE}/status/incidents${qs}`, {
+      headers: {
+        Accept: "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(json.message || "Failed to load incidents");
+    return {
+      items: (json.data ?? []) as StatusIncident[],
+      pagination: json.pagination as { page: number; limit: number; total: number; hasNext: boolean } | undefined,
+    };
+  },
+
+  statusIncident: (slug: string) => request<StatusIncidentDetail>(`/status/incidents/${encodeURIComponent(slug)}`),
+
+  createStatusIncident: (body: StatusIncidentInput) =>
+    request<StatusIncident>("/status/incidents", { method: "POST", body: JSON.stringify(body) }),
+
+  updateStatusIncident: (id: string, body: Partial<StatusIncidentInput>) =>
+    request<StatusIncident>(`/status/incidents/${encodeURIComponent(id)}`, {
+      method: "PUT",
+      body: JSON.stringify(body),
+    }),
+
+  resolveStatusIncident: (id: string) =>
+    request<StatusIncident>(`/status/incidents/${encodeURIComponent(id)}/resolve`, { method: "POST" }),
+
+  createStatusService: (body: { key: string; name: string; description?: string }) =>
+    request<StatusService>("/status/services", { method: "POST", body: JSON.stringify(body) }),
 
   listUsers: (params?: Record<string, string>) => {
     const qs = params ? new URLSearchParams(params).toString() : "";
@@ -259,21 +285,64 @@ export type AuthUserDto = {
 };
 
 export type StatusService = {
-  id?: string;
+  id: string;
+  key: string;
   name: string;
-  slug?: string;
-  region?: string;
-  status: string;
-  latencyMs?: number;
-  latency?: number;
-  uptime90d?: number;
-  uptime?: number;
+  description?: string;
+  status: "operational" | "degraded" | "major";
+  uptime: {
+    last24Hours: number;
+    last30Days: number;
+    last90Days: number;
+  };
+};
+
+export type StatusIncident = {
+  id: string;
+  serviceId: string;
+  serviceKey: string;
+  serviceName: string;
+  title: string;
+  slug: string;
+  status: "investigating" | "identified" | "monitoring" | "resolved";
+  severity: "maintenance" | "degraded" | "major";
+  description?: string;
+  publicMessage?: string;
+  startedAt: string;
+  resolvedAt: string | null;
+  isPublic: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type StatusIncidentDetail = StatusIncident & {
+  affectedServices: string[];
+  durationMinutes: number | null;
+  timeline: Array<{
+    status: StatusIncident["status"];
+    label: string;
+    at: string;
+    description?: string;
+  }>;
+};
+
+export type StatusIncidentInput = {
+  serviceKey: string;
+  title: string;
+  severity: StatusIncident["severity"];
+  description?: string;
+  publicMessage?: string;
+  status?: StatusIncident["status"];
+  startedAt?: string;
+  isPublic?: boolean;
 };
 
 export type StatusOverview = {
-  status: string;
-  services?: StatusService[];
-  updatedAt?: string;
+  overallStatus: "operational" | "degraded" | "major";
+  services: StatusService[];
+  activeIncidents: StatusIncident[];
+  scheduledMaintenance: StatusIncident[];
+  updatedAt: string;
 };
 
 export type BlogPost = {
@@ -326,6 +395,8 @@ type BlogPostDto = {
   tag_ids: string[];
   author: { id: string; name: string; email?: string };
   published_at: string | null;
+  view_count?: number;
+  unique_view_count?: number;
   created_at: string;
   updated_at: string;
   seo_title: string | null;
@@ -372,12 +443,47 @@ function normalizePost(dto: BlogPostDto, categoryName = "—"): BlogPost {
     categoryName,
     tagIds: dto.tag_ids ?? [],
     author: dto.author,
+    viewCount: dto.view_count ?? 0,
+    views: dto.view_count ?? 0,
     updatedAt: dto.updated_at,
     publishedAt: dto.published_at,
     seoTitle: dto.seo_title,
     seoDescription: dto.seo_description,
   };
 }
+
+export type ChangelogCategory = "feature" | "improvement" | "security" | "bugfix" | "performance";
+export type ChangelogStatus = "draft" | "published" | "scheduled";
+
+export type ChangelogRelease = {
+  id: string;
+  version: string;
+  title: string;
+  category: ChangelogCategory;
+  summary: string;
+  notes: string[];
+  content_markdown: string;
+  tags: string[];
+  status: ChangelogStatus;
+  publishedAt: string | null;
+  isPublic: boolean;
+  slug: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type ChangelogInput = {
+  version: string;
+  title: string;
+  category?: ChangelogCategory;
+  summary?: string;
+  notes?: string[];
+  content_markdown?: string;
+  tags?: string[];
+  status?: ChangelogStatus;
+  publishedAt?: string | null;
+  isPublic?: boolean;
+};
 
 export { normalizePost };
 

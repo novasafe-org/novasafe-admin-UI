@@ -18,6 +18,7 @@ import BlogEditorPage from "@/pages/nova/BlogEditorPage";
 import MediaPage from "@/pages/nova/MediaPage";
 import DocsPage from "@/pages/nova/DocsPage";
 import ChangelogPage from "@/pages/nova/ChangelogPage";
+import ChangelogEditorPage from "@/pages/nova/ChangelogEditorPage";
 import AnnouncementsPage from "@/pages/nova/AnnouncementsPage";
 import SupportPage from "@/pages/nova/SupportPage";
 import AnalyticsPage from "@/pages/nova/AnalyticsPage";
@@ -70,6 +71,7 @@ const App = () => (
                     <Route path="/content/media" element={<MediaPage />} />
                     <Route path="/docs" element={<DocsPage />} />
                     <Route path="/changelog" element={<ChangelogPage />} />
+                    <Route path="/changelog/edit/:id" element={<ChangelogEditorPage />} />
                     <Route path="/announcements" element={<AnnouncementsPage />} />
                     <Route path="/system" element={<SystemPage />} />
                     <Route path="/rbac" element={<RBACPage />} />
