@@ -54,7 +54,7 @@ function categoryTone(cat: string): "primary" | "danger" | "warning" | "info" | 
   return "info";
 }
 
-function statusTone(status: ChangelogStatus): "success" | "muted" | "warning" {
+function statusTone(status?: ChangelogStatus): "success" | "muted" | "warning" {
   if (status === "published") return "success";
   if (status === "scheduled") return "warning";
   return "muted";
@@ -79,16 +79,18 @@ function monthKey(date: string | null): string {
   return d.toLocaleDateString(undefined, { month: "long", year: "numeric" });
 }
 
-function noteStats(notes: string[], tags: string[]) {
-  const improvements = notes.filter((n) => /improv/i.test(n)).length;
-  const fixes = notes.filter((n) => /fix|bug/i.test(n)).length;
-  const security = notes.filter((n) => /secur/i.test(n)).length;
+function noteStats(notes?: string[], tags?: string[]) {
+  const safeNotes = notes ?? [];
+  const safeTags = tags ?? [];
+  const improvements = safeNotes.filter((n) => /improv/i.test(n)).length;
+  const fixes = safeNotes.filter((n) => /fix|bug/i.test(n)).length;
+  const security = safeNotes.filter((n) => /secur/i.test(n)).length;
   const parts: string[] = [];
   if (improvements) parts.push(`${improvements} Improvement${improvements > 1 ? "s" : ""}`);
   if (fixes) parts.push(`${fixes} Fix${fixes > 1 ? "es" : ""}`);
   if (security) parts.push(`${security} Security`);
-  if (!parts.length && tags.length) parts.push(`${tags.length} tag${tags.length > 1 ? "s" : ""}`);
-  if (!parts.length && notes.length) parts.push(`${notes.length} note${notes.length > 1 ? "s" : ""}`);
+  if (!parts.length && safeTags.length) parts.push(`${safeTags.length} tag${safeTags.length > 1 ? "s" : ""}`);
+  if (!parts.length && safeNotes.length) parts.push(`${safeNotes.length} note${safeNotes.length > 1 ? "s" : ""}`);
   return parts;
 }
 
@@ -122,7 +124,7 @@ export default function ChangelogPage() {
     setLoading(true);
     adminApi
       .changelogList()
-      .then(setItems)
+      .then((data) => setItems(Array.isArray(data) ? data : []))
       .catch((err) => toast.error(err instanceof Error ? err.message : "Failed to load releases"))
       .finally(() => setLoading(false));
   }, []);
@@ -162,10 +164,10 @@ export default function ChangelogPage() {
       const q = search.toLowerCase();
       list = list.filter(
         (i) =>
-          i.title.toLowerCase().includes(q) ||
-          i.version.toLowerCase().includes(q) ||
-          i.summary.toLowerCase().includes(q) ||
-          i.tags.some((t) => t.toLowerCase().includes(q)),
+          (i.title ?? "").toLowerCase().includes(q) ||
+          (i.version ?? "").toLowerCase().includes(q) ||
+          (i.summary ?? "").toLowerCase().includes(q) ||
+          (i.tags ?? []).some((t) => t.toLowerCase().includes(q)),
       );
     }
     list.sort((a, b) => {

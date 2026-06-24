@@ -120,18 +120,27 @@ export const adminApi = {
       body: JSON.stringify({ email, roleKey }),
     }),
 
-  changelogList: () => request<ChangelogRelease[]>("/changelog"),
+  changelogList: async () => {
+    const data = await request<ChangelogRelease[] | null | undefined>("/changelog");
+    return (Array.isArray(data) ? data : []).map(normalizeChangelogRelease);
+  },
 
-  changelogGet: (id: string) => request<ChangelogRelease>(`/changelog/${encodeURIComponent(id)}`),
+  changelogGet: async (id: string) => {
+    const data = await request<ChangelogRelease | null | undefined>(`/changelog/${encodeURIComponent(id)}`);
+    if (!data) throw new Error("Release not found");
+    return normalizeChangelogRelease(data);
+  },
 
-  createChangelog: (body: ChangelogInput) =>
-    request<ChangelogRelease>("/changelog", { method: "POST", body: JSON.stringify(body) }),
+  createChangelog: async (body: ChangelogInput) =>
+    normalizeChangelogRelease(await request<ChangelogRelease>("/changelog", { method: "POST", body: JSON.stringify(body) })),
 
-  updateChangelog: (id: string, body: Partial<ChangelogInput>) =>
-    request<ChangelogRelease>(`/changelog/${encodeURIComponent(id)}`, {
-      method: "PUT",
-      body: JSON.stringify(body),
-    }),
+  updateChangelog: async (id: string, body: Partial<ChangelogInput>) =>
+    normalizeChangelogRelease(
+      await request<ChangelogRelease>(`/changelog/${encodeURIComponent(id)}`, {
+        method: "PUT",
+        body: JSON.stringify(body),
+      }),
+    ),
 
   deleteChangelog: (id: string) =>
     request<void>(`/changelog/${encodeURIComponent(id)}`, { method: "DELETE" }),
@@ -484,6 +493,45 @@ export type ChangelogInput = {
   publishedAt?: string | null;
   isPublic?: boolean;
 };
+
+/** Normalize API / legacy Mongo shapes so UI never reads undefined arrays. */
+export function normalizeChangelogRelease(raw: Partial<ChangelogRelease> & { id?: string }): ChangelogRelease {
+  const notes = Array.isArray(raw.notes) ? raw.notes : [];
+  const contentMarkdown = raw.content_markdown ?? notes.join("\n");
+  const category = normalizeChangelogCategory(raw.category);
+  const status: ChangelogStatus =
+    raw.status === "draft" || raw.status === "published" || raw.status === "scheduled"
+      ? raw.status
+      : raw.isPublic === false
+        ? "draft"
+        : "published";
+
+  return {
+    id: String(raw.id ?? ""),
+    version: String(raw.version ?? ""),
+    title: String(raw.title ?? ""),
+    category,
+    summary: String(raw.summary ?? ""),
+    notes,
+    content_markdown: contentMarkdown,
+    tags: Array.isArray(raw.tags) ? raw.tags : [],
+    status,
+    publishedAt: raw.publishedAt ?? null,
+    isPublic: raw.isPublic !== false,
+    slug: String(raw.slug ?? ""),
+    createdAt: raw.createdAt ?? new Date().toISOString(),
+    updatedAt: raw.updatedAt ?? new Date().toISOString(),
+  };
+}
+
+function normalizeChangelogCategory(value: unknown): ChangelogCategory {
+  const raw = String(value ?? "feature").toLowerCase();
+  if (raw === "bug fix" || raw === "bugfix") return "bugfix";
+  if (raw === "feature" || raw === "improvement" || raw === "security" || raw === "performance") {
+    return raw;
+  }
+  return "feature";
+}
 
 export { normalizePost };
 
