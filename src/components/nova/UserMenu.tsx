@@ -5,10 +5,12 @@ import {
   DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/context/AuthContext";
+import { useBuildMetadata } from "@/hooks/useBuildMetadata";
 import { toast } from "sonner";
 
 export function UserMenu() {
   const { user, logout } = useAuth();
+  const build = useBuildMetadata();
   const nav = useNavigate();
   if (!user) return null;
 
@@ -40,6 +42,15 @@ export function UserMenu() {
         <DropdownMenuItem onClick={() => nav("/profile/security")}>
           <Shield className="w-4 h-4 mr-2" />Security
         </DropdownMenuItem>
+        {build ? (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuLabel className="font-normal">
+              <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Version</div>
+              <div className="mt-0.5 font-mono text-xs text-foreground">v{build.version}</div>
+            </DropdownMenuLabel>
+          </>
+        ) : null}
         <DropdownMenuSeparator />
         <DropdownMenuItem
           className="text-destructive focus:text-destructive"

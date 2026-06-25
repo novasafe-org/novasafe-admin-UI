@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Button, Card, Input, PageHeader, ReadOnlyBanner, Select } from "@/components/nova/ui";
 import { useNova } from "@/context/NovaContext";
+import { useBuildMetadata } from "@/hooks/useBuildMetadata";
 import { adminApi } from "@/lib/api";
 import { Building2, Mail, Bell, CreditCard, Flag, Key, Plug, ShieldCheck, UserPlus } from "lucide-react";
 import { toast } from "sonner";
@@ -20,6 +21,7 @@ type Member = { id: string; email: string; name: string; role: string; status: s
 
 export default function SettingsPage() {
   const { can } = useNova();
+  const build = useBuildMetadata();
   const canEdit = can("settings.manage");
   const canInvite = can("settings.manage");
   const [members, setMembers] = useState<Member[]>([]);
@@ -103,6 +105,34 @@ export default function SettingsPage() {
         )}
         {inviteLink && (
           <p className="text-xs text-muted-foreground mt-3">Invite link: {inviteLink}</p>
+        )}
+      </Card>
+
+      <Card className="p-5 mb-6">
+        <h3 className="font-semibold text-foreground mb-4">About</h3>
+        {build ? (
+          <dl className="grid gap-3 sm:grid-cols-2 text-sm">
+            <div>
+              <dt className="text-xs text-muted-foreground">Version</dt>
+              <dd className="mt-1 font-mono text-foreground">v{build.version}</dd>
+            </div>
+            <div>
+              <dt className="text-xs text-muted-foreground">Build</dt>
+              <dd className="mt-1 font-mono text-foreground">{build.build}</dd>
+            </div>
+            <div>
+              <dt className="text-xs text-muted-foreground">Commit</dt>
+              <dd className="mt-1 font-mono text-foreground">{build.commit}</dd>
+            </div>
+            <div>
+              <dt className="text-xs text-muted-foreground">Released at</dt>
+              <dd className="mt-1 text-foreground">
+                {new Date(build.releasedAt).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}
+              </dd>
+            </div>
+          </dl>
+        ) : (
+          <p className="text-sm text-muted-foreground">Loading build metadata…</p>
         )}
       </Card>
 
