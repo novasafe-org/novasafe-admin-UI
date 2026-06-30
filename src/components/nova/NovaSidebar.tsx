@@ -4,6 +4,7 @@ import {
   BookOpen, Megaphone, LifeBuoy, BarChart3, Activity, ScrollText,
   Lock, Settings, ChevronLeft, ChevronRight, Sparkles,
 } from "lucide-react";
+import { AdminBrand, AdminLogo } from "@/components/brand/AdminLogo";
 import { useNova, Permission } from "@/context/NovaContext";
 import { useLayout } from "@/context/LayoutContext";
 import { getSecondaryNav } from "./secondaryNav";
@@ -82,15 +83,7 @@ export function NovaSidebar() {
         title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
       >
         <div className="flex items-center gap-2.5 overflow-hidden">
-          <div className="w-7 h-7 rounded-md gradient-primary flex items-center justify-center shrink-0">
-            <ShieldCheck className="w-4 h-4 text-primary-foreground" />
-          </div>
-          {!collapsed && (
-            <div className="leading-tight text-left">
-              <div className="font-semibold text-foreground text-[14px]">NovaSafe</div>
-              <div className="text-[10px] text-muted-foreground uppercase tracking-wider">Admin</div>
-            </div>
-          )}
+          {collapsed ? <AdminLogo size="sm" /> : <AdminBrand size="sm" subtitle="Admin" />}
         </div>
       </button>
 

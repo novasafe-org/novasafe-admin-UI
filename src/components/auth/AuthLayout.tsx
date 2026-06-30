@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 import { Link } from "react-router-dom";
-import { ShieldCheck } from "lucide-react";
+import { AdminBrand, AdminLogo } from "@/components/brand/AdminLogo";
 
 export function AuthLayout({
   title,
@@ -17,10 +17,8 @@ export function AuthLayout({
     <div className="min-h-screen flex bg-background">
       {/* Left: brand panel */}
       <div className="hidden lg:flex flex-col w-[44%] xl:w-[40%] relative overflow-hidden p-12 text-primary-foreground gradient-primary">
-        <Link to="/" className="flex items-center gap-2.5 z-10">
-          <div className="w-9 h-9 rounded-lg bg-white/15 backdrop-blur flex items-center justify-center ring-1 ring-white/20">
-            <ShieldCheck className="w-5 h-5" />
-          </div>
+        <Link to="/" className="flex items-center gap-3 z-10">
+          <AdminLogo size="lg" className="ring-1 ring-white/20 rounded-xl bg-white/5" />
           <div className="leading-tight">
             <div className="font-semibold text-[15px]">NovaSafe</div>
             <div className="text-[10px] uppercase tracking-wider opacity-80">Admin Portal</div>
@@ -57,11 +55,8 @@ export function AuthLayout({
       {/* Right: form panel */}
       <div className="flex-1 flex flex-col">
         <div className="lg:hidden flex items-center justify-between px-6 py-4 border-b border-border">
-          <Link to="/" className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-md gradient-primary flex items-center justify-center">
-              <ShieldCheck className="w-4 h-4 text-primary-foreground" />
-            </div>
-            <span className="font-semibold text-sm">NovaSafe</span>
+          <Link to="/">
+            <AdminBrand size="sm" subtitle="Admin" />
           </Link>
         </div>
         <div className="flex-1 flex items-center justify-center px-6 py-10">

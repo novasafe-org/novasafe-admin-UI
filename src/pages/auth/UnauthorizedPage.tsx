@@ -1,5 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
 import { ShieldAlert, ArrowLeft, Home } from "lucide-react";
+import { AdminLogo } from "@/components/brand/AdminLogo";
 import { Button } from "@/components/nova/ui";
 import { useAuth } from "@/context/AuthContext";
 
@@ -9,6 +10,9 @@ export default function UnauthorizedPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-6">
       <div className="max-w-md w-full text-center">
+        <div className="mx-auto mb-4 flex justify-center">
+          <AdminLogo size="lg" />
+        </div>
         <div className="mx-auto w-16 h-16 rounded-2xl bg-destructive/10 text-destructive flex items-center justify-center mb-6">
           <ShieldAlert className="w-8 h-8" />
         </div>
