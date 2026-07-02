@@ -339,7 +339,7 @@ export const adminApi = {
   getFeatureFlag: (key: string) =>
     request<FeatureFlagRow[]>(`/feature-flags/${encodeURIComponent(key)}`),
 
-  toggleFeatureFlag: (key: string, body: { enabled: boolean; environment: string }) =>
+  toggleFeatureFlag: (key: string, body: { enabled: boolean; environment: string; approvalNote?: string }) =>
     request<FeatureFlagRow>(`/feature-flags/${encodeURIComponent(key)}`, {
       method: "PATCH",
       body: JSON.stringify(body),
