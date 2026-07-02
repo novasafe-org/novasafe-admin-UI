@@ -97,6 +97,7 @@ export default function FeatureFlagDetailPage() {
   const [savingEnv, setSavingEnv] = useState<string | null>(null);
   const [pending, setPending] = useState<PendingToggle | null>(null);
   const [confirmText, setConfirmText] = useState("");
+  const [approvalNote, setApprovalNote] = useState("");
 
   const load = useCallback(async () => {
     if (!key) return;
@@ -152,16 +153,21 @@ export default function FeatureFlagDetailPage() {
     if (environment === "production") {
       setPending({ environment, enabled });
       setConfirmText("");
+      setApprovalNote("");
       return;
     }
     void applyToggle(environment, enabled);
   };
 
-  const applyToggle = async (environment: string, enabled: boolean) => {
+  const applyToggle = async (environment: string, enabled: boolean, note?: string) => {
     if (!key) return;
     setSavingEnv(environment);
     try {
-      await adminApi.toggleFeatureFlag(key, { environment, enabled });
+      await adminApi.toggleFeatureFlag(key, {
+        environment,
+        enabled,
+        ...(note ? { approvalNote: note } : {}),
+      });
       toast.success(`${ENV_LABELS[environment as keyof typeof ENV_LABELS] ?? environment} updated`);
       await Promise.all([load(), loadHistory()]);
     } catch (err) {
@@ -170,6 +176,7 @@ export default function FeatureFlagDetailPage() {
       setSavingEnv(null);
       setPending(null);
       setConfirmText("");
+      setApprovalNote("");
     }
   };
 
@@ -179,7 +186,11 @@ export default function FeatureFlagDetailPage() {
       toast.error("Type the exact flag key to confirm production changes");
       return;
     }
-    void applyToggle(pending.environment, pending.enabled);
+    if (meta?.tier === "enterprise" && pending.enabled && !approvalNote.trim()) {
+      toast.error("Enterprise-tier production enables require an approval note");
+      return;
+    }
+    void applyToggle(pending.environment, pending.enabled, approvalNote.trim() || undefined);
   };
 
   if (!canRead) {
@@ -342,6 +353,20 @@ export default function FeatureFlagDetailPage() {
             autoComplete="off"
             className="font-mono"
           />
+          {meta?.tier === "enterprise" && pending?.enabled ? (
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-foreground" htmlFor="approval-note">
+                Approval note (required for enterprise tier)
+              </label>
+              <Input
+                id="approval-note"
+                value={approvalNote}
+                onChange={(e) => setApprovalNote(e.target.value)}
+                placeholder="Ticket link or launch approval reference"
+                autoComplete="off"
+              />
+            </div>
+          ) : null}
           <DialogFooter className="gap-2 sm:gap-0">
             <Button variant="outline" onClick={() => setPending(null)}>
               Cancel
