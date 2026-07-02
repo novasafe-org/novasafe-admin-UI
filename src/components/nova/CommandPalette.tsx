@@ -2,7 +2,7 @@ import { Command } from "cmdk";
 import { useNavigate } from "react-router-dom";
 import { useNova } from "@/context/NovaContext";
 import { users, blogPosts, docs, tickets } from "@/lib/mockData";
-import { LayoutDashboard, Users, CreditCard, ShieldCheck, FileText, BookOpen, Settings, Activity, Megaphone, ScrollText, Sparkles, LifeBuoy, BarChart3, Lock, MonitorSmartphone } from "lucide-react";
+import { LayoutDashboard, Users, CreditCard, ShieldCheck, FileText, BookOpen, Settings, Activity, Megaphone, ScrollText, Sparkles, LifeBuoy, BarChart3, Lock, MonitorSmartphone, Flag } from "lucide-react";
 
 const nav = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -18,6 +18,7 @@ const nav = [
   { to: "/announcements", label: "Announcements", icon: Megaphone },
   { to: "/support", label: "Support", icon: LifeBuoy },
   { to: "/analytics", label: "Analytics", icon: BarChart3 },
+  { to: "/feature-flags", label: "Feature Flags", icon: Flag },
   { to: "/system", label: "System Status", icon: Activity },
   { to: "/settings", label: "Settings", icon: Settings },
 ];

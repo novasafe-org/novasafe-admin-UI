@@ -282,6 +282,59 @@ export const adminApi = {
 
   deleteBlogMedia: (id: string) =>
     blogRequest<void>(`/media/${encodeURIComponent(id)}`, { method: "DELETE" }),
+
+  listFeatureFlags: (params?: { environment?: string }) => {
+    const qs = params?.environment ? `?environment=${encodeURIComponent(params.environment)}` : "";
+    return request<FeatureFlagRow[]>(`/feature-flags${qs}`);
+  },
+
+  listFeatureFlagMatrix: async (): Promise<FeatureFlagMatrixRow[]> => {
+    const [production, staging, development] = await Promise.all([
+      request<FeatureFlagRow[]>("/feature-flags?environment=production"),
+      request<FeatureFlagRow[]>("/feature-flags?environment=staging"),
+      request<FeatureFlagRow[]>("/feature-flags?environment=development"),
+    ]);
+
+    const byKey = new Map<string, FeatureFlagMatrixRow>();
+
+    const mergeEnv = (
+      rows: FeatureFlagRow[],
+      env: "production" | "staging" | "development",
+    ) => {
+      for (const row of rows) {
+        let entry = byKey.get(row.key);
+        if (!entry) {
+          entry = {
+            key: row.key,
+            displayName: row.displayName,
+            description: row.description,
+            owner: row.owner || "—",
+            category: row.category,
+            tier: row.tier,
+            lifecycle: row.lifecycle,
+            production: false,
+            staging: false,
+            development: false,
+            lastChanged: null,
+            lastChangedBy: null,
+          };
+          byKey.set(row.key, entry);
+        }
+        entry[env] = row.enabled;
+        if (row.owner) entry.owner = row.owner;
+        if (row.updatedAt && (!entry.lastChanged || row.updatedAt > entry.lastChanged)) {
+          entry.lastChanged = row.updatedAt;
+          entry.lastChangedBy = row.updatedByEmail ?? row.updatedBy;
+        }
+      }
+    };
+
+    mergeEnv(production, "production");
+    mergeEnv(staging, "staging");
+    mergeEnv(development, "development");
+
+    return Array.from(byKey.values()).sort((a, b) => a.displayName.localeCompare(b.displayName));
+  },
 };
 
 export type AuthUserDto = {
@@ -390,6 +443,39 @@ export type CustomerUser = {
   securityScore: number;
   lastLogin: string | null;
   createdAt: string;
+};
+
+export type FeatureFlagRow = {
+  key: string;
+  displayName: string;
+  description: string;
+  owner?: string;
+  category: string;
+  tier: string;
+  lifecycle: string;
+  clientSurfaces: string[];
+  environment: string;
+  enabled: boolean;
+  catalogDefault: boolean;
+  version: number;
+  updatedAt: string | null;
+  updatedBy: string | null;
+  updatedByEmail: string | null;
+};
+
+export type FeatureFlagMatrixRow = {
+  key: string;
+  displayName: string;
+  description: string;
+  owner: string;
+  category: string;
+  tier: string;
+  lifecycle: string;
+  production: boolean;
+  staging: boolean;
+  development: boolean;
+  lastChanged: string | null;
+  lastChangedBy: string | null;
 };
 
 type BlogPostDto = {

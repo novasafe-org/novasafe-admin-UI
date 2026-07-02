@@ -2,7 +2,7 @@ import { NavLink, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, Users, CreditCard, ShieldCheck, MonitorSmartphone, FileText,
   BookOpen, Megaphone, LifeBuoy, BarChart3, Activity, ScrollText,
-  Lock, Settings, ChevronLeft, ChevronRight, Sparkles,
+  Lock, Settings, ChevronLeft, ChevronRight, Sparkles, Flag,
 } from "lucide-react";
 import { AdminBrand, AdminLogo } from "@/components/brand/AdminLogo";
 import { useNova, Permission } from "@/context/NovaContext";
@@ -51,6 +51,7 @@ const groups: Group[] = [
   {
     title: "Platform",
     items: [
+      { to: "/feature-flags", label: "Feature Flags", icon: Flag, perm: "flags.read" },
       { to: "/system", label: "System Status", icon: Activity, perm: "system.read" },
       { to: "/settings", label: "Settings", icon: Settings, perm: "settings.read" },
     ],

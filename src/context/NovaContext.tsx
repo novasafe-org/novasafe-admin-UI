@@ -25,7 +25,9 @@ export type Permission =
   | "audit.read"
   | "settings.manage"
   | "settings.read"
-  | "integrations.manage";
+  | "integrations.manage"
+  | "flags.read"
+  | "flags.manage";
 
 type Ctx = {
   role: Role;
