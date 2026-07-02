@@ -335,6 +335,25 @@ export const adminApi = {
 
     return Array.from(byKey.values()).sort((a, b) => a.displayName.localeCompare(b.displayName));
   },
+
+  getFeatureFlag: (key: string) =>
+    request<FeatureFlagRow[]>(`/feature-flags/${encodeURIComponent(key)}`),
+
+  toggleFeatureFlag: (key: string, body: { enabled: boolean; environment: string }) =>
+    request<FeatureFlagRow>(`/feature-flags/${encodeURIComponent(key)}`, {
+      method: "PATCH",
+      body: JSON.stringify(body),
+    }),
+
+  getFeatureFlagHistory: (key: string, params?: { environment?: string; limit?: number }) => {
+    const search = new URLSearchParams();
+    if (params?.environment) search.set("environment", params.environment);
+    if (params?.limit) search.set("limit", String(params.limit));
+    const qs = search.toString();
+    return request<FeatureFlagAuditEntry[]>(
+      `/feature-flags/${encodeURIComponent(key)}/history${qs ? `?${qs}` : ""}`,
+    );
+  },
 };
 
 export type AuthUserDto = {
@@ -476,6 +495,19 @@ export type FeatureFlagMatrixRow = {
   development: boolean;
   lastChanged: string | null;
   lastChangedBy: string | null;
+};
+
+export type FeatureFlagAuditEntry = {
+  id?: string;
+  _id?: string;
+  key: string;
+  environment: string;
+  action: "toggle" | "bulk_update";
+  oldValue: { enabled: boolean };
+  newValue: { enabled: boolean };
+  actorId: string;
+  actorEmail: string;
+  createdAt: string;
 };
 
 type BlogPostDto = {
