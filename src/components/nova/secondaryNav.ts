@@ -258,7 +258,7 @@ export const SECONDARY_NAV: { match: (path: string) => boolean; nav: SecondaryNa
         ]},
         { title: "Platform", items: [
           { to: "/settings#plans", label: "Plans & pricing" },
-          { to: "/settings#flags", label: "Feature flags" },
+          { to: "/settings#flags", label: "Feature flags (legacy)" },
           { to: "/settings#api-keys", label: "API keys" },
           { to: "/settings#integrations", label: "Integrations" },
           { to: "/settings#policies", label: "Security policies" },
