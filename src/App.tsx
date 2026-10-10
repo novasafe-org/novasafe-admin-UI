@@ -28,6 +28,8 @@ import RBACPage from "@/pages/nova/RBACPage";
 import SettingsPage from "@/pages/nova/SettingsPage";
 import FeatureFlagsPage from "@/pages/nova/feature-flags/FeatureFlagsPage";
 import FeatureFlagDetailPage from "@/pages/nova/feature-flags/FeatureFlagDetailPage";
+import ServiceAccountsPage from "@/pages/nova/ServiceAccountsPage";
+import ServiceAccountDetailPage from "@/pages/nova/ServiceAccountDetailPage";
 import ProfilePage from "@/pages/nova/ProfilePage";
 import SecuritySettingsPage from "@/pages/nova/SecuritySettingsPage";
 import LoginPage from "@/pages/auth/LoginPage";
@@ -80,6 +82,8 @@ const App = () => (
                     <Route path="/feature-flags/:key" element={<FeatureFlagDetailPage />} />
                     <Route path="/rbac" element={<RBACPage />} />
                     <Route path="/settings" element={<SettingsPage />} />
+                    <Route path="/integrations/service-accounts" element={<ServiceAccountsPage />} />
+                    <Route path="/integrations/service-accounts/:id" element={<ServiceAccountDetailPage />} />
                     <Route path="/profile" element={<ProfilePage />} />
                     <Route path="/profile/security" element={<SecuritySettingsPage />} />
                   </Route>

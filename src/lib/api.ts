@@ -354,6 +354,72 @@ export const adminApi = {
       `/feature-flags/${encodeURIComponent(key)}/history${qs ? `?${qs}` : ""}`,
     );
   },
+
+  listServiceAccounts: () =>
+    request<{ items: ServiceAccountDto[] }>("/service-accounts").then((d) => d.items),
+
+  getServiceAccount: (id: string) => request<ServiceAccountDto>(`/service-accounts/${encodeURIComponent(id)}`),
+
+  createServiceAccount: (body: ServiceAccountInput) =>
+    request<ServiceAccountDto>("/service-accounts", { method: "POST", body: JSON.stringify(body) }),
+
+  updateServiceAccount: (id: string, body: Partial<ServiceAccountInput> & { status?: "active" | "disabled" }) =>
+    request<ServiceAccountDto>(`/service-accounts/${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      body: JSON.stringify(body),
+    }),
+
+  disableServiceAccount: (id: string) =>
+    request<void>(`/service-accounts/${encodeURIComponent(id)}`, { method: "DELETE" }),
+
+  listServiceAccountTokens: (accountId: string) =>
+    request<{ items: ApiTokenDto[] }>(`/service-accounts/${encodeURIComponent(accountId)}/tokens`).then(
+      (d) => d.items,
+    ),
+
+  createServiceAccountToken: (accountId: string, body: { name: string; expiresInDays?: number }) =>
+    request<{ token: string; tokenRecord: ApiTokenDto }>(
+      `/service-accounts/${encodeURIComponent(accountId)}/tokens`,
+      { method: "POST", body: JSON.stringify(body) },
+    ),
+
+  revokeServiceAccountToken: (accountId: string, tokenId: string) =>
+    request<void>(`/service-accounts/${encodeURIComponent(accountId)}/tokens/${encodeURIComponent(tokenId)}/revoke`, {
+      method: "POST",
+    }),
+};
+
+export type ServiceAccountPermissionGrant = {
+  permissionKey: string;
+  action: PermissionAction;
+};
+
+export type ServiceAccountDto = {
+  id: string;
+  name: string;
+  description?: string;
+  status: "active" | "disabled";
+  permissions: ServiceAccountPermissionGrant[];
+  defaultAuthor?: { id: string; name: string; email?: string };
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type ServiceAccountInput = {
+  name: string;
+  description?: string;
+  permissions: ServiceAccountPermissionGrant[];
+  defaultAuthor?: { id: string; name: string; email?: string };
+};
+
+export type ApiTokenDto = {
+  id: string;
+  name: string;
+  prefix: string;
+  expiresAt?: string;
+  lastUsedAt?: string;
+  revokedAt?: string;
+  createdAt: string;
 };
 
 export type AuthUserDto = {
