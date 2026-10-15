@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.0.1
+
+### Changed
+
+Service accounts UI for API token management
+
 NovaSafe Admin Panel release history (managed by release-please).
 
 ## v1.0.0
