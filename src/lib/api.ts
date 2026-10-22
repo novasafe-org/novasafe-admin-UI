@@ -48,6 +48,9 @@ async function blogRequest<T>(path: string, options: RequestInit = {}): Promise<
   if (token) headers.Authorization = `Bearer ${token}`;
 
   const res = await fetch(`${API_BASE}${path}`, { ...options, headers });
+  if (res.status === 204) {
+    return { data: undefined as T };
+  }
   const json = await res.json().catch(() => ({}));
   if (!res.ok) {
     const msg =
