@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 import { Badge, Button, Card, PageHeader } from "@/components/nova/ui";
 import { DataTable, Column } from "@/components/nova/DataTable";
 import { adminApi } from "@/lib/api";
 import { useNova } from "@/context/NovaContext";
-import { Plus, Image, Tag, Folder, Users, Pencil } from "lucide-react";
+import { Plus, Image, Tag, Folder, Users, Pencil, Trash2 } from "lucide-react";
 
 type Row = {
   id: string;
@@ -16,64 +17,6 @@ type Row = {
   updated: string;
 };
 
-const columns: Column<Row>[] = [
-  {
-    key: "title",
-    header: "Title",
-    accessor: (p) => p.title,
-    sortable: true,
-    render: (p) => (
-      <Link to={`/content/edit/${p.id}`} className="text-foreground font-medium hover:text-primary">
-        {p.title}
-      </Link>
-    ),
-  },
-  { key: "author", header: "Author", accessor: (p) => p.author, sortable: true, filterable: true },
-  {
-    key: "category",
-    header: "Category",
-    accessor: (p) => p.category,
-    sortable: true,
-    filterable: true,
-    render: (p) => <Badge tone="info">{p.category}</Badge>,
-  },
-  {
-    key: "status",
-    header: "Status",
-    accessor: (p) => p.status,
-    sortable: true,
-    filterable: true,
-    filterOptions: [
-      { label: "Published", value: "published" },
-      { label: "Draft", value: "draft" },
-      { label: "Scheduled", value: "scheduled" },
-    ],
-    render: (p) => (
-      <Badge tone={p.status === "published" ? "success" : p.status === "draft" ? "muted" : "warning"}>
-        {p.status}
-      </Badge>
-    ),
-  },
-  { key: "views", header: "Views", accessor: (p) => p.views, sortable: true, align: "right", render: (p) => p.views.toLocaleString() },
-  {
-    key: "updated",
-    header: "Updated",
-    accessor: (p) => p.updated,
-    sortable: true,
-    render: (p) => <span className="text-muted-foreground text-xs">{p.updated}</span>,
-  },
-  {
-    key: "actions",
-    header: "",
-    accessor: () => "",
-    render: (p) => (
-      <Link to={`/content/edit/${p.id}`} className="text-muted-foreground hover:text-foreground">
-        <Pencil className="w-4 h-4" />
-      </Link>
-    ),
-  },
-];
-
 export default function ContentPage() {
   const navigate = useNavigate();
   const { can } = useNova();
@@ -81,9 +24,10 @@ export default function ContentPage() {
   const [rows, setRows] = useState<Row[]>([]);
   const [stats, setStats] = useState({ categories: 0, tags: 0, posts: 0 });
   const [error, setError] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  useEffect(() => {
-    Promise.all([
+  const loadPosts = useCallback(() => {
+    return Promise.all([
       adminApi.blogPosts({ perPage: "100" }),
       adminApi.blogCategories(),
       adminApi.blogTags(),
@@ -105,9 +49,118 @@ export default function ContentPage() {
           tags: tags.items.length,
           posts: posts.total,
         });
+        setError(null);
       })
       .catch((err) => setError(err instanceof Error ? err.message : "Failed to load blog"));
   }, []);
+
+  useEffect(() => {
+    void loadPosts();
+  }, [loadPosts]);
+
+  const removePost = useCallback(
+    async (row: Row) => {
+      if (!canEdit) return;
+      if (!confirm(`Delete “${row.title}”? This cannot be undone.`)) return;
+      setDeletingId(row.id);
+      try {
+        await adminApi.deleteBlogPost(row.id);
+        setRows((prev) => prev.filter((p) => p.id !== row.id));
+        setStats((s) => ({ ...s, posts: Math.max(0, s.posts - 1) }));
+        toast.success("Post deleted");
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : "Delete failed");
+      } finally {
+        setDeletingId(null);
+      }
+    },
+    [canEdit],
+  );
+
+  const columns: Column<Row>[] = useMemo(
+    () => [
+      {
+        key: "title",
+        header: "Title",
+        accessor: (p) => p.title,
+        sortable: true,
+        render: (p) => (
+          <Link to={`/content/edit/${p.id}`} className="text-foreground font-medium hover:text-primary">
+            {p.title}
+          </Link>
+        ),
+      },
+      { key: "author", header: "Author", accessor: (p) => p.author, sortable: true, filterable: true },
+      {
+        key: "category",
+        header: "Category",
+        accessor: (p) => p.category,
+        sortable: true,
+        filterable: true,
+        render: (p) => <Badge tone="info">{p.category}</Badge>,
+      },
+      {
+        key: "status",
+        header: "Status",
+        accessor: (p) => p.status,
+        sortable: true,
+        filterable: true,
+        filterOptions: [
+          { label: "Published", value: "published" },
+          { label: "Draft", value: "draft" },
+          { label: "Scheduled", value: "scheduled" },
+        ],
+        render: (p) => (
+          <Badge tone={p.status === "published" ? "success" : p.status === "draft" ? "muted" : "warning"}>
+            {p.status}
+          </Badge>
+        ),
+      },
+      {
+        key: "views",
+        header: "Views",
+        accessor: (p) => p.views,
+        sortable: true,
+        align: "right",
+        render: (p) => p.views.toLocaleString(),
+      },
+      {
+        key: "updated",
+        header: "Updated",
+        accessor: (p) => p.updated,
+        sortable: true,
+        render: (p) => <span className="text-muted-foreground text-xs">{p.updated}</span>,
+      },
+      {
+        key: "actions",
+        header: "",
+        accessor: () => "",
+        render: (p) => (
+          <div className="flex items-center justify-end gap-2">
+            <Link
+              to={`/content/edit/${p.id}`}
+              className="text-muted-foreground hover:text-foreground"
+              title="Edit"
+            >
+              <Pencil className="w-4 h-4" />
+            </Link>
+            {canEdit && (
+              <button
+                type="button"
+                className="text-muted-foreground hover:text-destructive disabled:opacity-50"
+                title="Delete"
+                disabled={deletingId === p.id}
+                onClick={() => void removePost(p)}
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+        ),
+      },
+    ],
+    [canEdit, deletingId, removePost],
+  );
 
   const filterOptions = useMemo(
     () => Array.from(new Set(rows.map((p) => p.category))).map((c) => ({ label: c, value: c })),
