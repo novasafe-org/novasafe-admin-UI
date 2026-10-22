@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.0.2
+
+### Changed
+
+Add delete control for blog posts on Content table
+
 ## v1.0.1
 
 ### Changed
